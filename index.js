@@ -7,10 +7,74 @@ const ssh2 = require('ssh2')
 
 ssh2.createAgent("pageant")
 
+var instanceName = "sandbox"
 
 var hystoryPosition = 0;
 
 let fileSystem = {}
+let users = []
+
+const fileSystemFunctions = {
+    createFile: function (userDB, path, content = '', ) {
+        const parentDir = navigateToPath(path, true);
+        parentDir[getFileName(path)] = content;
+        
+    },
+    getBashHistory: function (userDB) {
+        var userDir = navigateToPath(userDB.home);
+        if (userDir[".bash_history"] === undefined) {
+            this.createFile(userDB, `${userDB.home}/.bash_history`);
+            userDir = navigateToPath(userDB.home);
+        }
+        return userDir[".bash_history"];
+    },
+    addToBashHistory: function (userDB, command) {
+        var userDir = navigateToPath(userDB.home);
+        if (userDir[".bash_history"] === undefined) {
+            this.createFile(userDB, `${userDB.home}/.bash_history`);
+            userDir = navigateToPath(userDB.home);
+        }
+        userDir[".bash_history"] += command + "\n";
+    },
+    tree: function (path, indent = '') {
+        let treeOutput = '';
+        const target = navigateToPath(path);
+
+        if (typeof target !== 'object') {
+            throw new Error('Path not found');
+        }
+
+        const keys = Object.keys(target);
+        keys.forEach((key, index) => {
+            const isLast = index === keys.length - 1;
+            treeOutput += indent + (isLast ? '└── ' : '├── ') + key + '\n';
+            if (typeof target[key] === 'object') {
+                treeOutput += this.tree(`${path}/${key}`, indent + (isLast ? '    ' : '│   '));
+            }
+        });
+
+        return treeOutput;
+    }
+};
+
+
+function navigateToPath(path, parent = false) {
+    const parts = path.split('/').filter(part => part.length > 0);
+    let current = fileSystem['/'];
+    for (let i = 0; i < (parent ? parts.length - 1 : parts.length); i++) {
+        current = current[parts[i]];
+        if (current === undefined) {
+            return false
+        }
+    }
+    return current;
+}
+
+function getFileName(path) {
+    const parts = path.split('/');
+    return parts[parts.length - 1];
+}
+
 
 const db = require('./db');
 
@@ -40,16 +104,47 @@ const server = new Server({
     console.log('Client connected!');
     let authCtx = {}
     let PTY = {}
-    var userDB = {}
+
+    /**
+     * @type {Object}
+     * @property {string} username
+     * @property {string} password
+     * @property {string} shell
+     * @property {string} home
+     * @property {number} uid
+     * @property {Object} stats
+     * @property {Object} stats.commands
+     * @property {number} stats.files
+     * @property {number} stats.directories
+     * @property {number} stats.sudo
+     * @property {number} stats.uptime
+     */
+    var userDB = {
+        username: '',
+        password: '',
+        home: '',
+        uid: 0,
+        groups: [],
+        stats: {
+            commands: {},
+            files: 0,
+            directories: 0,
+            sudo: 0,
+            uptime: 0,
+            lastLogin: new Date()
+        }
+    };
+
+    let currentDir = '/';
     client.on('authentication', (ctx) => {
         authCtx = ctx;
         if (!ctx.username) return ctx.reject();
-        userDB = db.get().users.find(user => user.username === ctx.username);
+        userDB = users.find(user => user.username === ctx.username);
         if (!userDB) {
-            user = { username: ctx.username, password: "", shell: "/bin/bash", home: "/home/" + ctx.username, uid: 1000 + db.get().users.length, groups: [ctx.username] }
-            db.get().users.push(user)
+            user = { username: ctx.username, password: "", home: "/home/" + ctx.username, uid: 1000 + users.length, groups: [ctx.username], stats: { commands: {}, files: 0, directories: 0, sudo: 0, uptime: 0, lastLogin: new Date() } }
             userDB = user
         }
+        currentDir = userDB.home;
         if (userDB.password) {
             if (ctx.method === 'password' && userDB.password === ctx.password) {
                 ctx.accept();
@@ -59,9 +154,10 @@ const server = new Server({
         } else {
             ctx.accept();
         }
-        
+
     }).on('ready', () => {
         console.log('Client authenticated!');
+        console.log('User:', userDB);
 
         client.on('session', (accept, reject) => {
             const session = accept()
@@ -72,7 +168,7 @@ const server = new Server({
 
                 var shell = accept();
 
-                if (authCtx.username === 'rick') { // Easter egg :D
+                if (authCtx.username === 'rick') {
                     try {
                         const frames = JSON.parse(fs.readFileSync('frames.txt', 'utf8'));
 
@@ -95,13 +191,21 @@ const server = new Server({
 
                 }
 
-                const motd = `Welcome to the terminal!\r\n`;
-
+                var motd = ""
+                console.log(fileSystem)
+                if (fileSystem["/"].etc?.motd) {
+                    motd = fileSystem["/"].etc.motd
+                }
                 motd.split('').forEach((char, index) => {
                     setTimeout(() => {
                         shell.write(char);
-                    }, 50 * index);
+                        if (index === motd.length - 1) {
+                            shell.write('\r\n');
+                        }
+                    }, 5 * index);
                 })
+
+                
 
                 var input = '';
                 shell.on('data', function (data) {
@@ -128,23 +232,15 @@ const server = new Server({
                     const [command, ...args] = input.split(' ');
                     var output = '';
 
-                    switch (command) {
-                        case 'echo':
-                            shell.write(args.join(' '));
-                            break;
-                        case 'exit':
-                            shell.write('Goodbye!\r\n');
-                            shell.end();
-                            break;
-                        case 'clear':
-                            shell.write('\x1Bc');
-                            break;
-                        case 'color':
-                            shell.write('\x1B[31m');
-                            break;
-                        default:
-                            shell.write(`Unknown command: ${command}\r\n`);
+                    try {
+                        fileSystemFunctions.addToBashHistory(userDB, input);
+                    } catch (error) {
+                        console.log(error)
                     }
+                    output += `${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} `;
+
+              
+
                 }
 
             });
@@ -165,9 +261,8 @@ const server = new Server({
 })
 
 server.listen(22, '127.0.0.1', () => {
-
-    fileSystem = db.get().fileSystem
-
+    fileSystem = db.get().fileSystem;
+    users = db.get().users;
     console.log('Listening on port ' + server.address().port);
 });
 
@@ -189,7 +284,7 @@ process.on('SIGINT', () => {
         console.log('Server stopped');
     });
     console.log('Saving database...');
-    db.set({ users: db.get().users, fileSystem: fileSystem });
+    db.set({ users: users, fileSystem: fileSystem });
     console.log('Database saved');
     process.exit(0);
 });

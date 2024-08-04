@@ -1,34 +1,69 @@
 {
   "users": [
     {
-      "name": "exelvi",
+      "username": "exelvi",
       "password": "password",
-      "UID": 1000,
+      "uid": 1000,
       "home": "/home/exelvi",
-      "permissions": {
-        "/home/exelvi": [
-          "r",
-          "w",
-          "x"
-        ],
-        "/": [
-          "r"
-        ]
+      "groups": [ "exelvi" ],
+      "stats": {
+        "commands": {},
+        "files": 0,
+        "directories": 0,
+        "sudo": 0,
+        "uptime": 0,
+        "lastLogin": 0
       }
     },
     {
-      "name": "root",
+      "username": "root",
       "password": "ifyoucanreadthisyouareahacker",
-      "UID": 0,
+      "uid": 0,
+      "groups": [ "root" ],
       "home": "/root",
-      "permissions": {
-        "/": [
-          "r",
-          "w",
-          "x"
-        ]
+      "stats": {
+        "commands": {},
+        "files": 0,
+        "directories": 0,
+        "sudo": 0,
+        "uptime": 0,
+        "lastLogin": 0
       }
     }
   ],
-  "fileSystem": {}
+  "fileSystem": {
+    "/": {
+      "home": {
+        "exelvi": {
+          ".bash_history": "",
+          ".bashrc": "",
+          ".bash_aliases": "",
+          "desktop": {
+            "about.txt": "<!DOCTYPE html>\n<span color='blue'>Hello, I'm exelvi</span>\n<span color='red'>I'm a developer</span>\n<span color='green'>I live in Veneto, Italy</span>\n\n\n<span hidden>Pssss... Also try to type 'color enable' and reopen me </span>",
+            "favotite.txt": "<!DOCTYPE html>\n<span color='#f7de1f'>Javascript</span>\n<span color='#0186d0'>VSCode</span>\n<span color='#5865F2'>Blurple</span>\n\n\n<span hidden>Pssss... Also try to type 'color enable' and reopen me </span>",
+            "links.txt": "<!DOCTYPE html>   \n\n<a target=\"_blank\" rel=\"noopener noreferrer\" href=\"https://exelvi.github.io\">My website</a>\n<a target=\"_blank\" rel=\"noopener noreferrer\" href=\"https://github.com/EXELVI\">My GitHub</a>\n<a target=\"_blank\" rel=\"noopener noreferrer\" href=\"https://www.instagram.com/exelviofficial/\">My Instagram</a>\n\n\n"
+          },
+          "documents": {
+            "troll.txt": "cat: troll.txt: Path not found"
+          }
+        }
+      },
+      "root": {
+        ".bash_history": "",
+        ".bashrc": "",
+        ".bash_aliases": ""
+      },
+      "etc": {
+        "motd": "Welcome to the terminal! \r\n\r\nType 'help' to see all available commands",
+        "skel": {
+          ".bash_history": "",
+          ".bashrc": "",
+          ".bash_aliases": "",
+          "desktop": {},
+          "documents": {}
+        },
+        "profile": ""
+      }
+    }
+  }
 }
