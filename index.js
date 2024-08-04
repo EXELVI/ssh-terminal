@@ -17,7 +17,7 @@ let users = []
 const fileSystemFunctions = {
     createFile: function (userDB, path, content = '',) {
         const parentDir = navigateToPath(path, true);
-        parentDir[getFileName(path)] = { content: content, owner: userDB.uid, size: content.length, lastModified: new Date(), created: new Date(), type: 'file' };
+        parentDir[getFileName(path)] = { content: content, owner: userDB.uid, lastModified: new Date(), created: new Date(), type: 'file' };
         userDB.stats.files++;
     },
     createDirectory: function (userDB, path) {
@@ -41,21 +41,12 @@ const fileSystemFunctions = {
         delete parentDir[getFileName(path)];
     },
     getBashHistory: function (userDB) {
-        var userDir = navigateToPath(userDB.home);
-        if (userDir[".bash_history"] === undefined) {
-            this.createFile(userDB, `${userDB.home}/.bash_history`);
-            userDir = navigateToPath(userDB.home);
-        }
-        return navigateToPath(`${userDB.home}/.bash_history`, true)["content"];
+        return this.readFileContent(`${userDB.home}/.bash_history`) || '';
     },
     addToBashHistory: function (userDB, command) {
-        var userDir = navigateToPath(userDB.home);
-        if (userDir[".bash_history"] === undefined) {
-            this.createFile(userDB, `${userDB.home}/.bash_history`);
-            userDir = navigateToPath(userDB.home);
-        }
-        console.log(userDir)
-        navigateToPath(`${userDB.home}/.bash_history`, true)["content"] += command + "\n";
+        var history = this.getBashHistory(userDB);
+        history += command + '\n';
+        this.changeFileContent(`${userDB.home}/.bash_history`, history);
     },
     tree: function (path, indent = '') {
         let treeOutput = '';
@@ -78,24 +69,24 @@ const fileSystemFunctions = {
     },
     readFileContent: function (path) {
         const file = navigateToPath(path);
-        if (file && file.type === 'file') {
-            return file.content;
+        if (typeof file === 'string') {
+            return file;
         } else {
             return false;
         }
     },
     copy: function (source, destination) {
-        const sourceObj = navigateToPath(source);
+        const sourceObj = navigateToPath(source, true);
         if (sourceObj === false) {
             throw new Error('Source path not found');
         }
+        console.log("Surce", sourceObj)
         const destinationDir = navigateToPath(destination, true);
         if (destinationDir === false) {
             throw new Error('Destination path not found');
         }
-        console.log(destinationDir)
-        destinationDir[getFileName(destination)] = { ...sourceObj };
-        console.log(destinationDir)
+
+        destinationDir[getFileName(destination)] = JSON.parse(JSON.stringify(sourceObj[getFileName(source)]));
     },
     move: function (source, destination) {
         this.copy(source, destination);
@@ -104,17 +95,16 @@ const fileSystemFunctions = {
 };
 
 
+
 function navigateToPath(path, parent = false) {
     const parts = path.split('/').filter(part => part.length > 0);
-    let current = fileSystem['/'];
-   for (let i = 0; i < (parent ? parts.length - 1 : parts.length); i++) {
-        const part = parts[i];
-        if (current[part] === undefined) {
+    let current = fileSystem['/'].content;
+    for (let i = 0; i < (parent ? parts.length - 1 : parts.length); i++) {
+        current = current[parts[i]]?.content;
+        if (current === undefined) {
             return false;
         }
-        current = current[part].content;
     }
-
     return current;
 }
 
@@ -252,7 +242,17 @@ const server = new Server({
             execute: function (input) {
                 const path = input.split(' ')[1];
                 try {
-                    fileSystemFunctions.remove(`${currentDir}/${path}`);
+                    var target = navigateToPath(`${path}`) || navigateToPath(`${currentDir}/${path}`);
+                    if (target) {
+                        if (target.type === 'directory') {
+                            delete navigateToPath(`${path}`, true)[getFileName(path)];
+                        } else {
+                            delete navigateToPath(`${path}`, true)[getFileName(path)];
+                        }
+                    } else {
+                        return `rm: ${path}: No such file or directory\r\n`;
+                    }
+
                     return '';
                 } catch (error) {
                     return `rm: ${path}: ${error.message}`;
@@ -265,8 +265,17 @@ const server = new Server({
             description: 'Display the content of a file',
             execute: function (input) {
                 const fileName = input.split(' ')[1];
+                if (!fileName) {
+                    return 'cat: missing file operand\r\n';
+                }
                 try {
-                    return fileSystemFunctions.readFileContent(`${currentDir}/${fileName}`) + '\r\n';
+                    var target = navigateToPath(`${fileName}`);
+                    if (!target) target = navigateToPath(`${currentDir}/${fileName}`);
+                    var content = target.content;
+                    if (!content) {
+                        return `cat: ${fileName}: No such file or directory\r\n`;
+                    }
+                    return content + '\r\n';
                 } catch (error) {
                     return `cat: ${fileName}: No such file or directory\r\n`;
                 }
@@ -291,54 +300,119 @@ const server = new Server({
             root: false,
             description: 'List files and directories',
             execute: function (input) {
-                const params = input.split(' ')
-                const currentDirContent = navigateToPath(currentDir);
+                var params = input.split(' ')
+                var currentDirContent = navigateToPath(currentDir);
                 if (params[2]) {
-                    const target = navigateToPath(`${currentDir}/${params[2]}`);
+                    var target = navigateToPath(`${params[2]}`);
+                    if (!target) target = navigateToPath(`${currentDir}/${params[2]}`);
                     if (target) currentDirContent = target;
                 } else if (params[1]) {
-                    const target = navigateToPath(`${currentDir}/${params[1]}`);
+                    var target = navigateToPath(`${params[1]}`);
+                    if (!target) target = navigateToPath(`${currentDir}/${params[1]}`);
                     if (target) currentDirContent = target;
                 }
-
                 if (params[1] == "-la") {
                     var output = 'total ' + Object.keys(currentDirContent).length + '\r\n';
                     Object.keys(currentDirContent).forEach((key) => {
-                        output += `${currentDirContent[key].type == 'directory' ? 'd' : '-'}rwxr-xr-x 1 ${currentDirContent[key].owner} ${currentDirContent[key].owner} ${currentDirContent[key].size} ${currentDirContent[key].lastModified} ${key}\r\n`;
+                        var size = 0;
+                        if (currentDirContent[key].type == 'file') {
+                            size = currentDirContent[key].content.length;
+                        } else {
+                            size = Object.keys(currentDirContent[key].content).length;
+                        }
+                        output += `${currentDirContent[key].type == 'directory' ? 'd' : '-'}rwxr-xr-x 1 ${currentDirContent[key].owner}${" ".repeat(7 - currentDirContent[key].owner.toString().length)}${currentDirContent[key].owner}${" ".repeat(7 - currentDirContent[key].owner.toString().length)}${size.toString().padStart(7)} ${currentDirContent[key].lastModified.toLocaleString()} ${currentDirContent[key].type == 'directory' ? "\x1B[34m" : ""}${key}${currentDirContent[key].type == 'directory' ? "\x1B[0m" : ""}\r\n`;
                     });
                     return output;
                 } else {
+                    return Object.keys(currentDirContent).map((key) => (currentDirContent[key].type == 'directory' ? "\x1B[34m" : "") + key + (currentDirContent[key].type == 'directory' ? "\x1B[0m" : "")).join(' ') + '\r\n';
                 }
-                
+
             },
         },
         {
-            name: "eval",
-            description: "Evaluate JavaScript code",
+            name: "mkdir",
+            description: "Create a new directory",
             root: false,
             execute: function (input) {
-                var code = input.split(' ').slice(1).join(' ');
-                try {
-                    return inspect(eval(code)) + '\r\n';
+                const dirName = input.split(' ')[1];
+                if (dirName) {
+                    fileSystemFunctions.createDirectory(`${currentDir}/${dirName}`);
+                    return '';
+                } else {
+                    return 'mkdir: missing operand\r\n';
                 }
-                catch (error) {
-                    return error.message + '\r\n';
+            }
+        },
+        {
+            name: "mv",
+            description: "Move a file or directory",
+            root: false,
+            execute: function (input) {
+                const parts = input.split(' ');
+                if (parts.length < 3) {
+                    return 'mv: missing operand\r\n';
+                }
+                try {
+                   var source = navigateToPath(`${parts[1]}`);
+                     if (!source) source = navigateToPath(`${currentDir}/${parts[1]}`);
+                    var destination = navigateToPath(`${parts[2]}`);
+                    if (!destination) destination = navigateToPath(`${currentDir}/${parts[2]}`);
+                    if (!source) {
+                        return `mv: cannot stat '${parts[1]}': No such file or directory\r\n`;
+                    }
+                    if (destination && destination.type === 'directory') {
+                        destination.content[getFileName(parts[1])] = source;
+                        delete navigateToPath(`${parts[1]}`, true)[getFileName(parts[1])];
+                    } else {
+                        return `mv: cannot move '${parts[1]}' to '${parts[2]}': Not a directory\r\n`;
+                    }
+                    return '';
+                } catch (error) {
+                    return `mv: ${error.message}\r\n`;
+                }
+            }
+        },
+        {
+            name: "cp",
+            description: "Copy a file or directory",
+            root: false,
+            execute: function (input) {
+                const parts = input.split(' ');
+                if (parts.length < 3) {
+                    return 'cp: missing operand\r\n';
+                }
+                try {
+                    var source = navigateToPath(`${parts[1]}`);
+                    if (!source) source = navigateToPath(`${currentDir}/${parts[1]}`);
+                    var destination = navigateToPath(`${parts[2]}`);
+                    if (!destination) destination = navigateToPath(`${currentDir}/${parts[2]}`);
+                    if (!source) {
+                        return `cp: cannot stat '${parts[1]}': No such file or directory\r\n`;
+                    }
+                    if (destination && destination.type === 'directory') {
+                        destination.content[getFileName(parts[1])] = source;
+                    } else {
+                        return `cp: cannot copy '${parts[1]}' to '${parts[2]}': Not a directory\r\n`;
+                    }
+                    return '';
+                } catch (error) {
+                    return `cp: ${error.message}\r\n`;
                 }
             }
         }
-
 
     ]
 
     client.on('authentication', (ctx) => {
         authCtx = ctx;
         if (!ctx.username) return ctx.reject();
+        if (ctx.username === 'rick') return ctx.accept();
         userDB = users.find(user => user.username === ctx.username);
         if (!userDB) {
             user = { username: ctx.username, password: "", home: "/home/" + ctx.username, uid: 1000 + users.length, groups: [ctx.username], stats: { commands: {}, files: 0, directories: 0, sudo: 0, uptime: 0, lastLogin: new Date() } }
             userDB = user;
             users.push(user);
-            console.log(navigateToPath("/etc/skel"))
+
             if (navigateToPath("/etc/skel")) {
                 fileSystemFunctions.copy("/etc/skel", userDB.home);
             }
@@ -371,6 +445,12 @@ const server = new Server({
                     try {
                         const frames = JSON.parse(fs.readFileSync('frames.txt', 'utf8'));
 
+                        shell.on('data', function (data) {
+                            if (data == "\u0003") {
+                                shell.end();
+                            }
+                        });
+
                         frames.forEach((frame, index) => {
                             setTimeout(() => {
                                 shell.write('\x1Bc');
@@ -387,10 +467,11 @@ const server = new Server({
                         shell.end();
                     }
 
-
+                    return
                 }
 
                 var motd = ""
+                console.log("Motd", navigateToPath("/etc/motd"))
                 if (navigateToPath("/etc/motd")) {
                     motd = fileSystemFunctions.readFileContent("/etc/motd");
                 }
@@ -399,6 +480,7 @@ const server = new Server({
                         shell.write(char);
                         if (index === motd.length - 1) {
                             shell.write('\r\n');
+                            shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} `);
                         }
                     }, 5 * index);
                 })

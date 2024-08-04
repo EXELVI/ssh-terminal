@@ -33,6 +33,26 @@
         "uptime": 0,
         "lastLogin": 0
       }
+    },
+    {
+      "username": "exelv",
+      "password": "",
+      "home": "/home/exelv",
+      "uid": 1002,
+      "groups": [
+        "exelv"
+      ],
+      "stats": {
+        "commands": {
+          "ls": 32,
+          "cat": 5
+        },
+        "files": 0,
+        "directories": 0,
+        "sudo": 0,
+        "uptime": 0,
+        "lastLogin": "2024-08-04T19:53:56.190Z"
+      }
     }
   ],
   "fileSystem": {
@@ -102,22 +122,65 @@
                       "created": "2024-01-01T00:00:00.000Z",
                       "content": "<!DOCTYPE html>   \n\n<a target=\"_blank\" rel=\"noopener noreferrer\" href=\"https://exelvi.github.io\">My website</a>\n<a target=\"_blank\" rel=\"noopener noreferrer\" href=\"https://github.com/EXELVI\">My GitHub</a>\n<a target=\"_blank\" rel=\"noopener noreferrer\" href=\"https://www.instagram.com/exelviofficial/\">My Instagram</a>\n\n\n"
                     }
-                  },
-                  "documents": {
-                    "type": "directory",
-                    "owner": 1000,
-                    "lastModified": "2024-01-01T00:00:00.000Z",
-                    "created": "2024-01-01T00:00:00.000Z",
-                    "content": {
-                      "troll.txt": {
-                        "type": "file",
-                        "owner": 1000,
-                        "lastModified": "2024-01-01T00:00:00.000Z",
-                        "created": "2024-01-01T00:00:00.000Z",
-                        "content": "cat: troll.txt: Path not found"
-                      }
+                  }
+                },
+                "documents": {
+                  "type": "directory",
+                  "owner": 1000,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": {
+                    "troll.txt": {
+                      "type": "file",
+                      "owner": 1000,
+                      "lastModified": "2024-01-01T00:00:00.000Z",
+                      "created": "2024-01-01T00:00:00.000Z",
+                      "content": "cat: troll.txt: Path not found"
                     }
                   }
+                }
+              }
+            },
+            "exelv": {
+              "type": "directory",
+              "owner": 0,
+              "lastModified": "2024-01-01T00:00:00.000Z",
+              "created": "2024-01-01T00:00:00.000Z",
+              "content": {
+                ".bash_history": {
+                  "type": "file",
+                  "owner": 0,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": ""
+                },
+                ".bashrc": {
+                  "type": "file",
+                  "owner": 0,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": ""
+                },
+                ".bash_aliases": {
+                  "type": "file",
+                  "owner": 0,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": ""
+                },
+                "desktop": {
+                  "type": "directory",
+                  "owner": 0,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": {}
+                },
+                "documents": {
+                  "type": "directory",
+                  "owner": 0,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": {}
                 }
               }
             }
