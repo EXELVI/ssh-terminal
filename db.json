@@ -37,36 +37,179 @@
   ],
   "fileSystem": {
     "/": {
-      "home": {
-        "exelvi": {
-          ".bash_history": "",
-          ".bashrc": "",
-          ".bash_aliases": "",
-          "desktop": {
-            "about.txt": "<!DOCTYPE html>\n<span color='blue'>Hello, I'm exelvi</span>\n<span color='red'>I'm a developer</span>\n<span color='green'>I live in Veneto, Italy</span>\n\n\n<span hidden>Pssss... Also try to type 'color enable' and reopen me </span>",
-            "favotite.txt": "<!DOCTYPE html>\n<span color='#f7de1f'>Javascript</span>\n<span color='#0186d0'>VSCode</span>\n<span color='#5865F2'>Blurple</span>\n\n\n<span hidden>Pssss... Also try to type 'color enable' and reopen me </span>",
-            "links.txt": "<!DOCTYPE html>   \n\n<a target=\"_blank\" rel=\"noopener noreferrer\" href=\"https://exelvi.github.io\">My website</a>\n<a target=\"_blank\" rel=\"noopener noreferrer\" href=\"https://github.com/EXELVI\">My GitHub</a>\n<a target=\"_blank\" rel=\"noopener noreferrer\" href=\"https://www.instagram.com/exelviofficial/\">My Instagram</a>\n\n\n"
-          },
-          "documents": {
-            "troll.txt": "cat: troll.txt: Path not found"
+      "type": "directory",
+      "owner": 0,
+      "lastModified": "2024-01-01T00:00:00.000Z",
+      "created": "2024-01-01T00:00:00.000Z",
+      "content": {
+        "home": {
+          "type": "directory",
+          "owner": 0,
+          "lastModified": "2024-01-01T00:00:00.000Z",
+          "created": "2024-01-01T00:00:00.000Z",
+          "content": {
+            "exelvi": {
+              "type": "directory",
+              "owner": 1000,
+              "lastModified": "2024-01-01T00:00:00.000Z",
+              "created": "2024-01-01T00:00:00.000Z",
+              "content": {
+                ".bash_history": {
+                  "type": "file",
+                  "owner": 1000,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": ""
+                },
+                ".bashrc": {
+                  "type": "file",
+                  "owner": 1000,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": ""
+                },
+                ".bash_aliases": {
+                  "type": "file",
+                  "owner": 1000,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": ""
+                },
+                "desktop": {
+                  "type": "directory",
+                  "owner": 1000,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": {
+                    "about.txt": {
+                      "type": "file",
+                      "owner": 1000,
+                      "lastModified": "2024-01-01T00:00:00.000Z",
+                      "created": "2024-01-01T00:00:00.000Z",
+                      "content": "<!DOCTYPE html>\n<span color='blue'>Hello, I'm exelvi</span>\n<span color='red'>I'm a developer</span>\n<span color='green'>I live in Veneto, Italy</span>\n\n\n<span hidden>Pssss... Also try to type 'color enable' and reopen me </span>"
+                    },
+                    "favotite.txt": {
+                      "type": "file",
+                      "owner": 1000,
+                      "lastModified": "2024-01-01T00:00:00.000Z",
+                      "created": "2024-01-01T00:00:00.000Z",
+                      "content": "<!DOCTYPE html>\n<span color='#f7de1f'>Javascript</span>\n<span color='#0186d0'>VSCode</span>\n<span color='#5865F2'>Blurple</span>\n\n\n<span hidden>Pssss... Also try to type 'color enable' and reopen me </span>"
+                    },
+                    "links.txt": {
+                      "type": "file",
+                      "owner": 1000,
+                      "lastModified": "2024-01-01T00:00:00.000Z",
+                      "created": "2024-01-01T00:00:00.000Z",
+                      "content": "<!DOCTYPE html>   \n\n<a target=\"_blank\" rel=\"noopener noreferrer\" href=\"https://exelvi.github.io\">My website</a>\n<a target=\"_blank\" rel=\"noopener noreferrer\" href=\"https://github.com/EXELVI\">My GitHub</a>\n<a target=\"_blank\" rel=\"noopener noreferrer\" href=\"https://www.instagram.com/exelviofficial/\">My Instagram</a>\n\n\n"
+                    }
+                  },
+                  "documents": {
+                    "type": "directory",
+                    "owner": 1000,
+                    "lastModified": "2024-01-01T00:00:00.000Z",
+                    "created": "2024-01-01T00:00:00.000Z",
+                    "content": {
+                      "troll.txt": {
+                        "type": "file",
+                        "owner": 1000,
+                        "lastModified": "2024-01-01T00:00:00.000Z",
+                        "created": "2024-01-01T00:00:00.000Z",
+                        "content": "cat: troll.txt: Path not found"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "root": {
+          "type": "directory",
+          "owner": 0,
+          "lastModified": "2024-01-01T00:00:00.000Z",
+          "created": "2024-01-01T00:00:00.000Z",
+          "content": {
+            ".bash_history": {
+              "type": "file",
+              "owner": 0,
+              "lastModified": "2024-01-01T00:00:00.000Z",
+              "created": "2024-01-01T00:00:00.000Z",
+              "content": ""
+            },
+            ".bashrc": {
+              "type": "file",
+              "owner": 0,
+              "lastModified": "2024-01-01T00:00:00.000Z",
+              "created": "2024-01-01T00:00:00.000Z",
+              "content": ""
+            },
+            ".bash_aliases": {
+              "type": "file",
+              "owner": 0,
+              "lastModified": "2024-01-01T00:00:00.000Z",
+              "created": "2024-01-01T00:00:00.000Z",
+              "content": ""
+            }
+          }
+        },
+        "etc": {
+          "type": "directory",
+          "owner": 0,
+          "lastModified": "2024-01-01T00:00:00.000Z",
+          "created": "2024-01-01T00:00:00.000Z",
+          "content": {
+            "motd": {
+              "type": "file",
+              "owner": 0,
+              "lastModified": "2024-01-01T00:00:00.000Z",
+              "created": "2024-01-01T00:00:00.000Z",
+              "content": "Welcome to the terminal! \r\n\r\nType 'help' to see all available commands"
+            },
+            "skel": {
+              "type": "directory",
+              "owner": 0,
+              "lastModified": "2024-01-01T00:00:00.000Z",
+              "created": "2024-01-01T00:00:00.000Z",
+              "content": {
+                ".bash_history": {
+                  "type": "file",
+                  "owner": 0,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": ""
+                },
+                ".bashrc": {
+                  "type": "file",
+                  "owner": 0,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": ""
+                },
+                ".bash_aliases": {
+                  "type": "file",
+                  "owner": 0,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": ""
+                },
+                "desktop": {
+                  "type": "directory",
+                  "owner": 0,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": {}
+                },
+                "documents": {
+                  "type": "directory",
+                  "owner": 0,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": {}
+                }
+              }
+            }
           }
         }
-      },
-      "root": {
-        ".bash_history": "",
-        ".bashrc": "",
-        ".bash_aliases": ""
-      },
-      "etc": {
-        "motd": "Welcome to the terminal! \r\n\r\nType 'help' to see all available commands",
-        "skel": {
-          ".bash_history": "",
-          ".bashrc": "",
-          ".bash_aliases": "",
-          "desktop": {},
-          "documents": {}
-        },
-        "profile": ""
       }
     }
   }
