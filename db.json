@@ -5,7 +5,9 @@
       "password": "password",
       "uid": 1000,
       "home": "/home/exelvi",
-      "groups": [ "exelvi" ],
+      "groups": [
+        "exelvi"
+      ],
       "stats": {
         "commands": {},
         "files": 0,
@@ -19,7 +21,9 @@
       "username": "root",
       "password": "ifyoucanreadthisyouareahacker",
       "uid": 0,
-      "groups": [ "root" ],
+      "groups": [
+        "root"
+      ],
       "home": "/root",
       "stats": {
         "commands": {},
