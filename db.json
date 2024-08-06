@@ -50,10 +50,10 @@
       ],
       "stats": {
         "commands": {
-          "ls": 62,
-          "cat": 92,
+          "ls": 65,
+          "cat": 103,
           "cd": 90,
-          "help": 18,
+          "help": 20,
           "exit": 8,
           "touch": 1,
           "su": 15,
@@ -62,18 +62,18 @@
           "neofetch": 10,
           "usermod": 5,
           "passwd": 4,
-          "echo": 3,
+          "echo": 7,
           "sh": 10,
           "tree": 12,
-          "adduser": 2,
+          "adduser": 3,
           "date": 4,
           "clear": 5,
-          "stats": 9
+          "stats": 105
         },
-        "files": 6,
+        "files": 9,
         "directories": 0,
         "sudo": 6,
-        "uptime": 3294894,
+        "uptime": 3313961,
         "lastLogin": "2024-08-04T19:53:56.190Z"
       }
     },
@@ -160,6 +160,40 @@
         "sudo": 0,
         "uptime": 6229,
         "lastLogin": "2024-08-06T16:56:35.881Z"
+      }
+    },
+    {
+      "username": "temp",
+      "password": "",
+      "home": "/home/temp",
+      "uid": 1008,
+      "groups": [
+        "temp"
+      ],
+      "stats": {
+        "commands": {},
+        "files": 0,
+        "directories": 0,
+        "sudo": 0,
+        "uptime": 366,
+        "lastLogin": "2024-08-06T20:25:05.933Z"
+      }
+    },
+    {
+      "username": "seimarso",
+      "password": "",
+      "home": "/home/seimarso",
+      "uid": 1009,
+      "groups": [
+        "seimarso"
+      ],
+      "stats": {
+        "commands": {},
+        "files": 0,
+        "directories": 0,
+        "sudo": 0,
+        "uptime": 0,
+        "lastLogin": "2024-08-06T20:57:28.601Z"
       }
     }
   ],
@@ -258,10 +292,10 @@
                 ".bash_history": {
                   "type": "file",
                   "owner": 0,
-                  "lastModified": "2024-08-06T20:00:43.969Z",
+                  "lastModified": "2024-08-06T20:59:54.941Z",
                   "created": "2024-01-01T00:00:00.000Z",
-                  "content": "help\nhelp\nhelp\nhelp\nhelp\nls\nstats\nstats\nstats\n\nstats\nstats\nstats\nstats\nstats\nhelp\na\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nclear\n\n\n\n\n\n\n\n\n\nclear\ncurl\n\n\n\n\n\nclear\nstats\n\n\n\na\nv\na\n\na\n\na\n\n\n\n\n\n\n\n\n\n\nhelp\n",
-                  "size": 206
+                  "content": "help\nhelp\nhelp\nhelp\nhelp\nls\nstats\nstats\nstats\n\nstats\nstats\nstats\nstats\nstats\nhelp\na\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nclear\n\n\n\n\n\n\n\n\n\nclear\ncurl\n\n\n\n\n\nclear\nstats\n\n\n\na\nv\na\n\na\n\na\n\n\n\n\n\n\n\n\n\n\nhelp\nstats\n\nstats\n\nstats\nstats\n\n\n\n\n\na\na\na\na\ncat \n\n\n\na\na\na\na\na\na\na\ntest\n\nstats\nstats\nstats\nstats\nstats\nstats\nstats\nstats\nstats\nstats\nstats\nstats\nstats -c\nstats -c\nstats\nstats -c\nstats\nstats\nstats a\nstats arewrqwerq\nstats root\nstats\nstats root\nstats r\nstats -c\nstats -c\nstats -c exelvi\nstats -a\nstats -a a\nstats -c\nstats\nstats -a \nstats -a aa\nstats -a cp\nstats -a root root\nstats -a root root\nstats -c\nstats -c\nstats -c\nstats -c\nstats --commands\nstats\nstats -c\nstats -c\nstats\nstats -c\nstats\nstats\nstats exelvi\nstats exelv\nstats\nstats\nstats\nstats root\nstats root\nstats\nstats root\nstats root\nstats\nstats -a\nstats\nstats -a\nstats -all\nstats -all\u001b[D\u001b[D\nstats --all\nstats -c\nstats -c\nstats\nstats\nstats -a\nstats\nstats -a\nstats -c\nstats -all\nstats -c\nstats\nstats\n\nstats\nstatsstats\nstats\nstats\nstats\nstats -a\nstats -aòll\nstats -aòll\u001b[D\u001b[D\nstats -all\nstats -c\nstats -c\nstats -c\nstats -c\nstats -c\nstats -c\nstats -c\nhelp\nadduser seimarso\nhelp\ncat \ncat file.txt\nls\ncat test.txt\necho ciao\necho ciao > opwekpokp\nl\nls\ncat opwekpokp\ncat opwekpokp\ncat opwekpokp\ncat opwekpokp\ncat opwekpokp\n\necho ciao > opwekpokpopwekpokp\necho ciao > opwekpokp\nls\ncat opwekpokp\ncat opwekpokp\n",
+                  "size": 1356
                 },
                 ".bashrc": {
                   "type": "file",
@@ -332,6 +366,20 @@
                   "owner": 1002,
                   "lastModified": "2024-08-06T18:29:10.824Z",
                   "created": "2024-08-06T18:29:10.824Z",
+                  "type": "file"
+                },
+                "opwekpokp": {
+                  "content": "ciao\r\n",
+                  "owner": 1002,
+                  "lastModified": "2024-08-06T20:58:52.649Z",
+                  "created": "2024-08-06T20:58:52.649Z",
+                  "type": "file"
+                },
+                "opwekpokpopwekpokp": {
+                  "content": "ciao\r\n",
+                  "owner": 1002,
+                  "lastModified": "2024-08-06T20:58:46.285Z",
+                  "created": "2024-08-06T20:58:46.285Z",
                   "type": "file"
                 }
               }
@@ -688,6 +736,92 @@
               }
             },
             "ansuser": {
+              "type": "directory",
+              "owner": 0,
+              "lastModified": "2024-01-01T00:00:00.000Z",
+              "created": "2024-01-01T00:00:00.000Z",
+              "content": {
+                ".bash_history": {
+                  "type": "file",
+                  "owner": 0,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": ""
+                },
+                ".bashrc": {
+                  "type": "file",
+                  "owner": 0,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": ""
+                },
+                ".bash_aliases": {
+                  "type": "file",
+                  "owner": 0,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": ""
+                },
+                "desktop": {
+                  "type": "directory",
+                  "owner": 0,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": {}
+                },
+                "documents": {
+                  "type": "directory",
+                  "owner": 0,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": {}
+                }
+              }
+            },
+            "temp": {
+              "type": "directory",
+              "owner": 0,
+              "lastModified": "2024-01-01T00:00:00.000Z",
+              "created": "2024-01-01T00:00:00.000Z",
+              "content": {
+                ".bash_history": {
+                  "type": "file",
+                  "owner": 0,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": ""
+                },
+                ".bashrc": {
+                  "type": "file",
+                  "owner": 0,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": ""
+                },
+                ".bash_aliases": {
+                  "type": "file",
+                  "owner": 0,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": ""
+                },
+                "desktop": {
+                  "type": "directory",
+                  "owner": 0,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": {}
+                },
+                "documents": {
+                  "type": "directory",
+                  "owner": 0,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": {}
+                }
+              }
+            },
+            "seimarso": {
               "type": "directory",
               "owner": 0,
               "lastModified": "2024-01-01T00:00:00.000Z",

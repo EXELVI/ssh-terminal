@@ -361,7 +361,7 @@ const server = new Server({
                         content = target
                     }
 
-                    return content + '\r\n';
+                    return content;
                 } catch (error) {
                     console.log(error)
                     return `cat: ${fileName}: No such file or directory\r\n`;
@@ -898,9 +898,11 @@ Options:
             description: "Display user statistics",
             root: false,
             execute: function (input, currentUser, shell) {
-                var parsed = parseCommand(input);
-                var user = parsed['input'] || users.find(user => user.uid === currentUser).username;
-                if (parsed['-help'] || parsed['h']) {
+                var parsed = input.split(' ').splice(1);
+                if (!parsed[parsed.length - 1] || parsed[parsed.length - 1].startsWith("-")) {
+                    user = users.find(u => u.uid === currentUser).username;
+                }
+                if (parsed[1] == "--help" || parsed[1] == "-h") {
                     let output = `Usage: stats [OPTION] [USER]
 
 Options:
@@ -912,19 +914,20 @@ Options:
                         outputFinal += line + "\r\n";
                     })
                     return outputFinal;
-                
+
                 }
 
                 if (!users.find(u => u.username === user)) {
                     return `stats: user '${user}' does not exist\r\n`;
                 }
+                user = users.find(u => u.username === user)
 
                 function randomReadableColor() {
                     var r = Math.floor(Math.random() * 256);
                     var g = Math.floor(Math.random() * 256);
                     var b = Math.floor(Math.random() * 256);
                     if (r + g + b < 60) return randomReadableColor();
-                    return { r, g, b };
+                    return [ r, g, b ]
                 }
                 let mostUsedCommand,
                     totalCommands
@@ -939,59 +942,55 @@ Options:
 
 
                 let output = `stats: ${input.split(' ')[1]}: invalid argument\r\n`
-
-                if (parsed['-c'] || parsed['-commands']) {
-
-                    let commandStats = Object.keys( user.stats.commands).sort((a, b) => user.stats.commands[b] - user.stats.commands[a]).map(cmd => {
-                        return `${cmd}:${' '.repeat(15 - cmd.length)}${stats.commands[cmd]} times`;
+                if (parsed[0] == "--commands" || parsed[0] == "-c") {
+                    let commandStats = Object.keys(user.stats.commands).sort((a, b) => user.stats.commands[b] - user.stats.commands[a]).map(cmd => {
+                        return `${cmd}:${' '.repeat(15 - cmd.length)}${user.stats.commands[cmd]} times`;
                     }).join('\r\n');
 
-                    output = `Command statistics for ${user}: \r\n`
+                    output = `Command statistics for ${user.username}: \r\n`
                     output += `Most used command: ${mostUsedCommand}\r\n`
                     output += `Total commands: ${totalCommands}\r\n`
                     output += `----------------------------------------\r\n`
                     output += `Commands:\r\n`
                     output += commandStats;
 
-                } else if (parsed['-complete'] || parsed['-all']) {
-                    output = `Statistics for user '${user}':
+                } else if (parsed[0] == "--complete" || parsed[0] == "-all") {
+                    output = `Statistics for user '${user.username}':
 Total commands: ${totalCommands}
 Most used command: ${mostUsedCommand}
 Files created: ${userDB.stats.files}
 Directories created: ${userDB.stats.directories}
 Sudo commands: ${userDB.stats.sudo}
 Time spent: ${formatMilliseconds(userDB.stats.uptime)}
-Last login: ${userDB.stats.lastLogin.toLocaleString()}
-`;
+Last login: ${userDB.stats.lastLogin.toLocaleString()}`;
 
                 } else {
-                    output = `Statistics for user '${user}':
-                    Total commands: ${totalCommands}
-                    Most used command: ${mostUsedCommand}
-                    Files created: ${userDB.stats.files}
-                    Time spent: ${formatMilliseconds(userDB.stats.uptime)}
-                    Last login: ${userDB.stats.lastLogin.toLocaleString()}
-                    `;
+                    output = `Statistics for user '${user.username}':
+Total commands: ${totalCommands}
+Most used command: ${mostUsedCommand}
+Files created: ${userDB.stats.files}
+Time spent: ${formatMilliseconds(userDB.stats.uptime)}
+Last login: ${userDB.stats.lastLogin.toLocaleString()}`;
                 }
 
                 var startColor = randomReadableColor();
                 var endColor = randomReadableColor();
 
-                var steps = output.split('\n').length;
+                const colorSteps = output.split('\n').length - 1;
 
-                //use chalk to colorize the output
-                let fade = [];
-                for (let i = 0; i < steps; i++) {
-                    fade.push(
-                        Math.floor(startColor.r + (endColor.r - startColor.r) * i / steps) + ',' +
-                        Math.floor(startColor.g + (endColor.g - startColor.g) * i / steps) + ',' +
-                        Math.floor(startColor.b + (endColor.b - startColor.b) * i / steps)
-                    );
+                const colorFade = [];
+                for (let i = 0; i <= colorSteps; i++) {
+                    const r = Math.round(startColor[0] + (endColor[0] - startColor[0]) * (i / colorSteps));
+                    const g = Math.round(startColor[1] + (endColor[1] - startColor[1]) * (i / colorSteps));
+                    const b = Math.round(startColor[2] + (endColor[2] - startColor[2]) * (i / colorSteps));
+                    colorFade.push([r, g, b]);
                 }
 
-                output.split('\n').forEach((line, index) => {
-                    shell.write(`\x1B[38;2;${fade[index]}m${line}\x1B[0m\r\n`);
-                })
+                for (let i = 0; i < colorFade.length; i++) {
+                    const color = colorFade[i];
+                    shell.write(chalk.rgb(color[0], color[1], color[2])(output.split('\n')[i]) + '\r\n');
+                }
+                
 
                 return "";
 
@@ -1151,7 +1150,7 @@ Last login: ${userDB.stats.lastLogin.toLocaleString()}
                     }, 5 * index);
                 })
 
-
+  
 
                 var input = '';
                 var passwordTemp = '';
@@ -1159,6 +1158,13 @@ Last login: ${userDB.stats.lastLogin.toLocaleString()}
 
                     console.log('Data:', data.toString());
                     console.log(data);
+
+                    var printableChars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!@#$%^&*()_+-=[]{}|;:,.<>?/\\\'"`~ \t\n\r';
+                    if (!mode.startsWith("passwd") && !mode.startsWith("supassword") && !mode.startsWith("sudo")) {
+                        if (printableChars.includes(data.toString())) {
+                            shell.write(data);
+                        }
+                    }
 
                     if (data.toString() === '\r') {
                         if (mode === "waiting") return;
@@ -1388,8 +1394,9 @@ Last login: ${userDB.stats.lastLogin.toLocaleString()}
                             shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} ${input}`);
                         }
                     } else {
+
                         input += data;
-                        if (!mode.startsWith("passwd") && !mode.startsWith("supassword") && !mode.startsWith("sudo")) shell.write(data);
+
                         tabMachPosition = 0;
                         tabMachCommandPosition = 0;
                         first = true;
