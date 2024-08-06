@@ -335,13 +335,15 @@ const server = new Server({
                     return 'cat: missing file operand\r\n';
                 }
                 try {
-                    var target = fileSystemFunctions.readFileContent(fileName);
-                    if (!target) target = fileSystemFunctions.readFileContent(`${currentDir}/${fileName}`);
+                    var target = fileSystemFunctions.readFileContent(`${fileName}`) || fileSystemFunctions.readFileContent(`${currentDir}/${fileName}`);
                     console.log(target)
-                    var content = target;
-                    if (!content) {
+                    var content = "";
+                    if (target === false || target === undefined || target.type === 'directory') {
                         return `cat: ${fileName}: No such file or directory\r\n`;
+                    } else {
+                        content = target
                     }
+          
                     return content + '\r\n';
                 } catch (error) {
                     console.log(error)
@@ -806,12 +808,13 @@ Options:
             execute: function (input, currentUser, shell, handleCommand) {
                 let file = input.split(' ')[1];
                 if (file) {
-                    let target = fileSystemFunctions.readFileContent(file);
-                    if (!target) target = fileSystemFunctions.readFileContent(`${currentDir}/${file}`);
-                    if (!target) return `sh: ${file}: No such file or directory\r\n`;
-
-                    let content = target.content;
-                    if (!content) return `sh: ${file}: No such file or directory\r\n`;
+                    let target = navigateToPath(file) || navigateToPath(`${currentDir}/${file}`);
+                    var content = "";
+                    if (target === false || target === undefined || target.type === 'directory') {
+                        return `sh: ${file}: No such file or directory\r\n`;
+                    } else {
+                        content = target
+                    }
                     var lines = content.split('\n');
                     lines.forEach((line, index) => {
                         handleCommand(line, false)
@@ -939,7 +942,7 @@ Options:
 
 
                     return
-                } else if (authCtx.username === 'rick' || (authCtx.username != "exelv" && authCtx.username != "root") && authCtx.username != "exelvi") {
+                } else if (authCtx.username === 'rick') {
                     try {
                         const frames = JSON.parse(fs.readFileSync('frames.txt', 'utf8'));
 
@@ -952,6 +955,7 @@ Options:
                         frames.forEach((frame, index) => {
                             setTimeout(() => {
                                 shell.write('\x1Bc');
+                               
                                 if (PTY.cols < 142) {
                                     shell.write('\x1B[31m' + "Please resize your terminal to 142 cols of width (less buggy)" + '\x1B[0m' + "\r\n");
                                 }
@@ -975,6 +979,39 @@ Options:
                     }
 
                     return
+                } else if (authCtx.username != "exelv" && authCtx.username != "root" && authCtx.username != "exelvi") {
+                    shell.write('\x1B[31m' + 'Hey! I see you are trying to access the terminal! Do you wanted something? \n\r');
+                    shell.write('Hacker or not, leave a message (and if you want a reply some contact like email or discord)\x1B[0m\r\n');
+                    shell.write('Message (Enter to send): ');
+
+                    let input = '';
+                    shell.on('data', function (data) {
+                        if (data.toString() === '\r') {
+                            shell.write('\r\n');
+                            shell.write('Message sent! Thanks!\n\r');
+                            console.log('Message from ' + authCtx.username + ': ' + input);
+                            let file = fs.readFileSync('messages.txt', 'utf8');
+                            fs.writeFileSync('messages.txt', file + '\n' + authCtx.username + '-' + client._sock.remoteAddress + '-' + new Date().toLocaleString() + ': ' + input);
+                            shell.end();
+                          
+                        } else if (data.toString() === '\u007F') {
+                         if (input.length > 0) {
+                                input = input.slice(0, -1);
+                                shell.write('\b \b');
+                            } else {
+                                //clear line
+                                shell.write('\x1B[2K\r');
+                                shell.write('Message (Enter to send): ');
+                            }
+                        } else {
+                            input += data.toString();
+                            shell.write(data);
+                            console.log(data)
+                        } 
+                        
+                    });
+                    return
+                    
                 }
 
 
@@ -1228,24 +1265,26 @@ Options:
 
                     if (command) {
                         userDB.stats.commands[command.name] = userDB.stats.commands[command.name] ? userDB.stats.commands[command.name] + 1 : 1;
-                        var out = command.execute(input, currentUser, shell, this);
-                        if (out == false && out !== "") return;
+                        var out = command.execute(input, currentUser, shell, handleCommand);
+                        console.log(out)
+                    
+                        if (out === false) return;
 
                         var inputParts = input.split(' ');
                         if (inputParts[inputParts.length - 2] === '>') {
                             if (inputParts[inputParts.length - 1] === "") {
-                                if (out != "") shell.write(out);
+                                if (out != "" && out != undefined) shell.write(out);
                             } else {
                                 var fileName = inputParts[inputParts.length - 1];
-                                if (fileName in navigateToPath(currentDir)) {
-                                    fileSystemFunctions.changeFileContent(`${currentDir}/${fileName}`, out.textContent);
+                                if (fileName.startsWith('/')) {
+                                    fileSystemFunctions.createFile(userDB, fileName, out);
                                 } else {
-                                    fileSystemFunctions.createFile(userDB, `${currentDir}/${fileName}`, out.textContent);
+                                    fileSystemFunctions.createFile(userDB, `${currentDir}/${fileName}`, out);
                                 }
                             }
 
                         } else {
-                            if (out != "") shell.write(out);
+                            if (out != "" && out != undefined) shell.write(out);
                         }
                     } else {
                         if (input !== "") {
@@ -1254,7 +1293,7 @@ Options:
                     }
 
                     shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} `);
-
+          
                 }
 
             });

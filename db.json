@@ -50,27 +50,28 @@
       ],
       "stats": {
         "commands": {
-          "ls": 51,
-          "cat": 28,
-          "cd": 86,
-          "help": 9,
+          "ls": 59,
+          "cat": 88,
+          "cd": 88,
+          "help": 11,
           "exit": 8,
           "touch": 1,
           "su": 15,
           "whoami": 16,
           "curl": 17,
-          "neofetch": 9,
+          "neofetch": 10,
           "usermod": 5,
           "passwd": 4,
-          "echo": 1,
-          "sh": 6,
+          "echo": 3,
+          "sh": 10,
           "tree": 12,
-          "adduser": 2
+          "adduser": 2,
+          "date": 3
         },
-        "files": 2,
+        "files": 5,
         "directories": 0,
         "sudo": 6,
-        "uptime": 3272960,
+        "uptime": 3287411,
         "lastLogin": "2024-08-04T19:53:56.190Z"
       }
     },
@@ -89,6 +90,74 @@
         "sudo": 0,
         "uptime": 0,
         "lastLogin": "2024-08-06T16:24:09.792Z"
+      }
+    },
+    {
+      "username": "naveen",
+      "password": "",
+      "home": "/home/naveen",
+      "uid": 1004,
+      "groups": [
+        "naveen"
+      ],
+      "stats": {
+        "commands": {},
+        "files": 0,
+        "directories": 0,
+        "sudo": 0,
+        "uptime": 6035,
+        "lastLogin": "2024-08-06T16:55:55.204Z"
+      }
+    },
+    {
+      "username": "oracle",
+      "password": "",
+      "home": "/home/oracle",
+      "uid": 1005,
+      "groups": [
+        "oracle"
+      ],
+      "stats": {
+        "commands": {},
+        "files": 0,
+        "directories": 0,
+        "sudo": 0,
+        "uptime": 8548,
+        "lastLogin": "2024-08-06T16:56:09.524Z"
+      }
+    },
+    {
+      "username": "craft",
+      "password": "",
+      "home": "/home/craft",
+      "uid": 1006,
+      "groups": [
+        "craft"
+      ],
+      "stats": {
+        "commands": {},
+        "files": 0,
+        "directories": 0,
+        "sudo": 0,
+        "uptime": 48122,
+        "lastLogin": "2024-08-06T16:56:22.572Z"
+      }
+    },
+    {
+      "username": "ansuser",
+      "password": "",
+      "home": "/home/ansuser",
+      "uid": 1007,
+      "groups": [
+        "ansuser"
+      ],
+      "stats": {
+        "commands": {},
+        "files": 0,
+        "directories": 0,
+        "sudo": 0,
+        "uptime": 6229,
+        "lastLogin": "2024-08-06T16:56:35.881Z"
       }
     }
   ],
@@ -232,6 +301,27 @@
                   "owner": 1002,
                   "lastModified": "2024-08-06T15:05:08.673Z",
                   "created": "2024-08-06T15:05:08.673Z",
+                  "type": "file"
+                },
+                "test.txt": {
+                  "content": "aaa",
+                  "owner": 1002,
+                  "lastModified": "2024-08-06T17:10:26.393Z",
+                  "created": "2024-08-06T17:10:26.393Z",
+                  "type": "file"
+                },
+                "date": {
+                  "content": "",
+                  "owner": 1002,
+                  "lastModified": "2024-08-06T17:24:43.063Z",
+                  "created": "2024-08-06T17:24:43.063Z",
+                  "type": "file"
+                },
+                "test": {
+                  "content": "",
+                  "owner": 1002,
+                  "lastModified": "2024-08-06T17:30:12.168Z",
+                  "created": "2024-08-06T17:30:12.168Z",
                   "type": "file"
                 }
               }
@@ -459,6 +549,135 @@
               }
             },
             "test2": {
+              "type": "directory",
+              "owner": 0,
+              "lastModified": "2024-01-01T00:00:00.000Z",
+              "created": "2024-01-01T00:00:00.000Z",
+              "content": {
+                ".bash_history": {
+                  "type": "file",
+                  "owner": 0,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": ""
+                },
+                ".bashrc": {
+                  "type": "file",
+                  "owner": 0,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": ""
+                },
+                ".bash_aliases": {
+                  "type": "file",
+                  "owner": 0,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": ""
+                },
+                "desktop": {
+                  "type": "directory",
+                  "owner": 0,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": {}
+                },
+                "documents": {
+                  "type": "directory",
+                  "owner": 0,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": {}
+                }
+              }
+            },
+            "oracle": {
+              "type": "directory",
+              "owner": 0,
+              "lastModified": "2024-01-01T00:00:00.000Z",
+              "created": "2024-01-01T00:00:00.000Z",
+              "content": {
+                ".bash_history": {
+                  "type": "file",
+                  "owner": 0,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": ""
+                },
+                ".bashrc": {
+                  "type": "file",
+                  "owner": 0,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": ""
+                },
+                ".bash_aliases": {
+                  "type": "file",
+                  "owner": 0,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": ""
+                },
+                "desktop": {
+                  "type": "directory",
+                  "owner": 0,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": {}
+                },
+                "documents": {
+                  "type": "directory",
+                  "owner": 0,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": {}
+                }
+              }
+            },
+            "craft": {
+              "type": "directory",
+              "owner": 0,
+              "lastModified": "2024-01-01T00:00:00.000Z",
+              "created": "2024-01-01T00:00:00.000Z",
+              "content": {
+                ".bash_history": {
+                  "type": "file",
+                  "owner": 0,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": ""
+                },
+                ".bashrc": {
+                  "type": "file",
+                  "owner": 0,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": ""
+                },
+                ".bash_aliases": {
+                  "type": "file",
+                  "owner": 0,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": ""
+                },
+                "desktop": {
+                  "type": "directory",
+                  "owner": 0,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": {}
+                },
+                "documents": {
+                  "type": "directory",
+                  "owner": 0,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": {}
+                }
+              }
+            },
+            "ansuser": {
               "type": "directory",
               "owner": 0,
               "lastModified": "2024-01-01T00:00:00.000Z",
