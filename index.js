@@ -10,7 +10,7 @@ ssh2.createAgent("pageant")
 
 var instanceName = "server"
 
-var hystoryPosition = 0;
+
 
 let fileSystem = {}
 let users = []
@@ -51,13 +51,13 @@ const fileSystemFunctions = {
     },
     changeFileContent: function (path, content) {
         const file = navigateToPath(path);
-        if (file.type == 'file') {
-            const parentDir = navigateToPath(path, true);
-            parentDir[getFileName(path)].content = content;
-            parentDir[getFileName(path)].size = content.length;
-            parentDir[getFileName(path)].lastModified = new Date();
+        if (typeof file === 'string') {
+            navigateToPath(path, true)[getFileName(path)].content = content;
+            navigateToPath(path, true)[getFileName(path)].lastModified = new Date();
+            navigateToPath(path, true)[getFileName(path)].size = content.length;
+            
         } else {
-            return false
+            throw new Error('Path not found');
         }
     },
     remove: function (path) {
@@ -239,6 +239,22 @@ const server = new Server({
     var tries = 0;
 
     var lastUser = 0;
+    var hystoryPosition = 0;
+
+    let tabMachPosition = 0;
+    let tabMachCommandPosition = 0;
+    let first = true;
+    let firstFile = true;
+
+    let inputPosition = 0;
+
+    var hinput,
+        command,
+        commandList,
+        fileListing,
+        fileNames,
+        matchingCommands,
+        matchingFiles
 
     let currentDir = '/';
     let sudoLogin = false; // logged in as root at least once
@@ -343,7 +359,7 @@ const server = new Server({
                     } else {
                         content = target
                     }
-          
+
                     return content + '\r\n';
                 } catch (error) {
                     console.log(error)
@@ -753,7 +769,7 @@ Options:
                         shell.write('New password: ');
                         tries = 0;
                         users.push(userJSON);
-                        
+
                     }, 1000)
                 })
                 return false;
@@ -955,7 +971,7 @@ Options:
                         frames.forEach((frame, index) => {
                             setTimeout(() => {
                                 shell.write('\x1Bc');
-                               
+
                                 if (PTY.cols < 142) {
                                     shell.write('\x1B[31m' + "Please resize your terminal to 142 cols of width (less buggy)" + '\x1B[0m' + "\r\n");
                                 }
@@ -993,9 +1009,9 @@ Options:
                             let file = fs.readFileSync('messages.txt', 'utf8');
                             fs.writeFileSync('messages.txt', file + '\n' + authCtx.username + '-' + client._sock.remoteAddress + '-' + new Date().toLocaleString() + ': ' + input);
                             shell.end();
-                          
+
                         } else if (data.toString() === '\u007F') {
-                         if (input.length > 0) {
+                            if (input.length > 0) {
                                 input = input.slice(0, -1);
                                 shell.write('\b \b');
                             } else {
@@ -1007,11 +1023,11 @@ Options:
                             input += data.toString();
                             shell.write(data);
                             console.log(data)
-                        } 
-                        
+                        }
+
                     });
                     return
-                    
+
                 }
 
 
@@ -1038,11 +1054,6 @@ Options:
 
                     console.log('Data:', data.toString());
                     console.log(data);
-
-                    if (!mode.startsWith("passwd") && !mode.startsWith("supassword") && !mode.startsWith("sudo")) shell.write(data);
-
-
-
 
                     if (data.toString() === '\r') {
                         if (mode === "waiting") return;
@@ -1148,7 +1159,7 @@ Options:
                         } else if (mode.startsWith("adduser-")) {
                             let mod = mode.split("-")[1];
                             let user = mode.split("-")[2];
-                            
+
                             if (mod == "passn") {
                                 mode = "adduser-passc-" + user;
                                 input = '';
@@ -1169,7 +1180,7 @@ Options:
                                     shell.write(`Try again [y/n]: `);
                                     mode = "confirm-adduser-passn-" + user;
                                     input = '';
-                                    return; 
+                                    return;
 
                                 }
                             }
@@ -1204,13 +1215,86 @@ Options:
                             input = input.slice(0, -1);
                             if (!mode.startsWith("passwd") && !mode.startsWith("supassword") && !mode.startsWith("sudo")) shell.write('\b \b');
                         }
-                    } else input += data;
+                    } else if (data.toString() === '\u0009') {
+                        if (mode == "normal") {
+                            if (first) {
+                                tabMachPosition = 0;
+                                tabMachCommandPosition = 0;
+                                first = false;
+            
+                                hinput = input
+                                command = hinput.split(' ')[0];
+                                commandList = commands.map(function (command) {
+                                    return command.name;
+                                });
+                                matchingCommands = commandList.filter(function (commandName) {
+                                    return commandName.startsWith(command);
+                                });
+                            }
+
+                            fileListing = navigateToPath(currentDir);
+                            fileNames = Object.keys(fileListing);
+                            matchingFiles = fileNames.filter(function (fileName) {
+                                return fileName.startsWith(hinput.split(' ')[1] || '');
+                            });
+
+                            if (matchingCommands.length === 1) {
+                                if (matchingCommands[0] == command) {
+                                    const file = matchingFiles[tabMachPosition];
+                                    if (file) {
+                                        input = command + ' ' + file;
+                                        shell.write('\x1B[2K\r');
+                                        shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} ${input}`);
+                                        tabMachPosition++;
+                                        if (tabMachPosition >= matchingFiles.length) {
+                                            tabMachPosition = 0;
+                                        }
+                                    }
+                                } else {
+                                    input = matchingCommands[0];
+                                    shell.write('\x1B[2K\r');
+                                    shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} ${input}`);                       
+                                }
+                            } else if (matchingCommands.length > 1) {
+                                input = matchingCommands[tabMachCommandPosition];
+                                shell.write('\x1B[2K\r');
+                                shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} ${input}`);
+                                tabMachCommandPosition++;
+                                if (tabMachCommandPosition >= matchingCommands.length) {
+                                    tabMachCommandPosition = 0;
+                                }
+                            }
+
+                        }
+                    } else if (data.toString() === '\u001b[A') {
+                        let bashHistory = fileSystemFunctions.getBashHistory(userDB).split('\n');
+                        if (hystoryPosition < bashHistory.length) {
+                            hystoryPosition++;
+                            input =bashHistory[bashHistory.length - hystoryPosition];
+                            shell.write('\x1B[2K\r');
+                            shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} ${input}`);                    
+                        }
+                    } else if (data.toString() === '\u001b[B') {
+                        let bashHistory = fileSystemFunctions.getBashHistory(userDB).split('\n');
+                        if (hystoryPosition > 1) {
+                            hystoryPosition--;
+                            input = bashHistory[bashHistory.length - hystoryPosition];
+                            shell.write('\x1B[2K\r');
+                            shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} ${input}`);                    
+                        } 
+                    } else {
+                        input += data;
+                        if (!mode.startsWith("passwd") && !mode.startsWith("supassword") && !mode.startsWith("sudo")) shell.write(data);
+                        tabMachPosition = 0;
+                        tabMachCommandPosition = 0;
+                        first = true;
+                    } 
                 });
 
 
                 function handleCommand(input, out = true) {
                     var output = '';
-
+                    hystoryPosition = 1;
                     try {
                         fileSystemFunctions.addToBashHistory(userDB, input);
                     } catch (error) {
@@ -1266,8 +1350,7 @@ Options:
                     if (command) {
                         userDB.stats.commands[command.name] = userDB.stats.commands[command.name] ? userDB.stats.commands[command.name] + 1 : 1;
                         var out = command.execute(input, currentUser, shell, handleCommand);
-                        console.log(out)
-                    
+
                         if (out === false) return;
 
                         var inputParts = input.split(' ');
@@ -1293,7 +1376,7 @@ Options:
                     }
 
                     shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} `);
-          
+
                 }
 
             });

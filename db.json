@@ -50,10 +50,10 @@
       ],
       "stats": {
         "commands": {
-          "ls": 59,
-          "cat": 88,
-          "cd": 88,
-          "help": 11,
+          "ls": 61,
+          "cat": 92,
+          "cd": 90,
+          "help": 12,
           "exit": 8,
           "touch": 1,
           "su": 15,
@@ -66,9 +66,10 @@
           "sh": 10,
           "tree": 12,
           "adduser": 2,
-          "date": 3
+          "date": 4,
+          "clear": 2
         },
-        "files": 5,
+        "files": 6,
         "directories": 0,
         "sudo": 6,
         "uptime": 3287411,
@@ -256,9 +257,10 @@
                 ".bash_history": {
                   "type": "file",
                   "owner": 0,
-                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "lastModified": "2024-08-06T18:54:35.964Z",
                   "created": "2024-01-01T00:00:00.000Z",
-                  "content": ""
+                  "content": "help\n",
+                  "size": 5
                 },
                 ".bashrc": {
                   "type": "file",
@@ -322,6 +324,13 @@
                   "owner": 1002,
                   "lastModified": "2024-08-06T17:30:12.168Z",
                   "created": "2024-08-06T17:30:12.168Z",
+                  "type": "file"
+                },
+                "datee": {
+                  "content": "",
+                  "owner": 1002,
+                  "lastModified": "2024-08-06T18:29:10.824Z",
+                  "created": "2024-08-06T18:29:10.824Z",
                   "type": "file"
                 }
               }
