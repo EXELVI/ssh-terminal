@@ -4,10 +4,11 @@ const { inspect } = require('util');
 const { utils: { generateKeyPairSync } } = require('ssh2');
 const { utils: { parseKey }, Server } = require('ssh2');
 const ssh2 = require('ssh2')
+const figlet = require('figlet');
 
 ssh2.createAgent("pageant")
 
-var instanceName = "sandbox"
+var instanceName = "server"
 
 var hystoryPosition = 0;
 
@@ -96,13 +97,27 @@ const fileSystemFunctions = {
 
 
 
-function navigateToPath(path, parent = false) {
+function navigateToPath(path, parent = false, content = true) {
     const parts = path.split('/').filter(part => part.length > 0);
-    let current = fileSystem['/'].content;
+    let current = fileSystem['/'] 
+    if (!content && parts.length === 0) {
+        return current;
+    } else {
+        current = current.content;
+    }
     for (let i = 0; i < (parent ? parts.length - 1 : parts.length); i++) {
-        current = current[parts[i]]?.content;
-        if (current === undefined) {
+        let c = current[parts[i]]
+       
+        if (c === undefined) {
             return false;
+        }
+        
+        if (content && i === parts.length - 1) {
+            current = c.content;
+        } else if (!content && i === parts.length - 1) {
+            return c;
+        } else {
+            current = c.content;
         }
     }
     return current;
@@ -174,6 +189,8 @@ const server = new Server({
         }
     };
 
+    var lastUser = 0;
+
     let currentDir = '/';
     let sudoLogin = false; // logged in as root at least once
     let mode = 'normal';
@@ -228,7 +245,7 @@ const server = new Server({
             execute: function (input) {
                 const fileName = input.split(' ')[1];
                 if (fileName) {
-                    fileSystemFunctions.createFile(`${currentDir}/${fileName}`, fileName == "grass.txt" ? "Time to go outside :)" : "");
+                    fileSystemFunctions.createFile(userDB, `${currentDir}/${fileName}`, fileName == "grass.txt" ? "Time to go outside :)" : "");
                     return '';
                 } else {
                     return 'touch: missing file operand\r\n';
@@ -270,13 +287,16 @@ const server = new Server({
                 }
                 try {
                     var target = navigateToPath(`${fileName}`);
+                    console.log(target)
                     if (!target) target = navigateToPath(`${currentDir}/${fileName}`);
+                    console.log(target)
                     var content = target.content;
                     if (!content) {
                         return `cat: ${fileName}: No such file or directory\r\n`;
                     }
                     return content + '\r\n';
                 } catch (error) {
+                    console.log(error)
                     return `cat: ${fileName}: No such file or directory\r\n`;
                 }
             }
@@ -353,8 +373,8 @@ const server = new Server({
                     return 'mv: missing operand\r\n';
                 }
                 try {
-                   var source = navigateToPath(`${parts[1]}`);
-                     if (!source) source = navigateToPath(`${currentDir}/${parts[1]}`);
+                    var source = navigateToPath(`${parts[1]}`);
+                    if (!source) source = navigateToPath(`${currentDir}/${parts[1]}`);
                     var destination = navigateToPath(`${parts[2]}`);
                     if (!destination) destination = navigateToPath(`${currentDir}/${parts[2]}`);
                     if (!source) {
@@ -399,6 +419,51 @@ const server = new Server({
                     return `cp: ${error.message}\r\n`;
                 }
             }
+        },
+        {
+            name: "cd",
+            description: "Change the current directory",
+            root: false,
+            execute: function (input) {
+                var directoryName = input.split(' ')[1];
+
+                try {
+                    let newDir;
+                    if (directoryName == ".." || directoryName == "../") {
+                        newDir = currentDir.substring(0, currentDir.lastIndexOf('/')) || '/';
+                    } else if (directoryName == "~") {
+                        newDir = userDB.home;
+                    } else if (directoryName.startsWith("/")) {
+                        newDir = directoryName;
+                    } else {
+                        newDir = `${currentDir}/${directoryName}`.replace("//", "/");
+                    }
+                    console.log(newDir, navigateToPath(newDir, false, false).type )
+                    if (navigateToPath(newDir, false, false).type === 'directory') {
+                        currentDir = newDir;
+                        return '';
+                    } else {
+                        return `cd: ${directoryName}: No such file or directory\r\n`;
+                    }
+
+                } catch (error) {
+                    return `cd: ${directoryName}: No such file or directory\r\n`;
+                }
+            }
+        },
+        {
+            name: "exit",
+            description: "Exit the terminal",
+            root: false,
+            execute: function () {
+                if (userDB.uid != 0 && lastUser != 0) {
+                    shell.write('Bye!\x1B[0m\r\n');
+                    shell.end();
+                } else {
+                    userDB = users.find(user => user.uid === lastUser);
+                }
+                return '';
+            }
         }
 
     ]
@@ -407,6 +472,7 @@ const server = new Server({
         authCtx = ctx;
         if (!ctx.username) return ctx.reject();
         if (ctx.username === 'rick') return ctx.accept();
+        if (ctx.username === "clock") return ctx.accept();
         userDB = users.find(user => user.username === ctx.username);
         if (!userDB) {
             user = { username: ctx.username, password: "", home: "/home/" + ctx.username, uid: 1000 + users.length, groups: [ctx.username], stats: { commands: {}, files: 0, directories: 0, sudo: 0, uptime: 0, lastLogin: new Date() } }
@@ -417,6 +483,7 @@ const server = new Server({
                 fileSystemFunctions.copy("/etc/skel", userDB.home);
             }
         }
+        lastUser = userDB.uid;
         currentDir = userDB.home;
         if (userDB.password) {
             if (ctx.method === 'password' && userDB.password === ctx.password) {
@@ -441,7 +508,27 @@ const server = new Server({
 
                 var shell = accept();
 
-                if (authCtx.username === 'rick') {
+                if (authCtx.username === 'clock') {
+
+                    const interval = setInterval(() => {
+                        shell.write('\x1Bc');
+                        var time = new Date().toLocaleTimeString();
+                        var text = figlet.textSync(time, { font: 'Colossal' })
+                        text.split("\n").forEach((line, index) => {
+                            shell.write(line + "\r\n");
+                        });
+                    }, 500);
+
+                    shell.on('data', function (data) {
+                        if (data == "\u0003") {
+                            clearInterval(interval);
+                            shell.end();
+                        }
+                    });
+
+
+                    return
+                } else if (authCtx.username === 'rick' || (authCtx.username != "exelv" && authCtx.username != "root") && authCtx.username != "exelvi") {
                     try {
                         const frames = JSON.parse(fs.readFileSync('frames.txt', 'utf8'));
 
@@ -452,10 +539,20 @@ const server = new Server({
                         });
 
                         frames.forEach((frame, index) => {
+                            console.log(PTY.cols)
                             setTimeout(() => {
                                 shell.write('\x1Bc');
+                                if (PTY.cols < 142) {
+                                    shell.write('\x1B[31m' + "Please resize your terminal to 142 cols of width (less buggy)" + '\x1B[0m' + "\r\n");
+                                }
                                 frame.split("\n").forEach((frame, index) => {
-                                    shell.write(frame + "\r\n");
+
+                                    shell.write("\x1B ")
+                                    var f = frame;
+                                    if (PTY.cols < 142) {
+                                        f = f.split(";").slice(20).join("");
+                                    }
+                                    shell.write(f + "\r\n");
                                 });
                                 if (index === frames.length - 1) {
                                     shell.end();
@@ -471,7 +568,6 @@ const server = new Server({
                 }
 
                 var motd = ""
-                console.log("Motd", navigateToPath("/etc/motd"))
                 if (navigateToPath("/etc/motd")) {
                     motd = fileSystemFunctions.readFileContent("/etc/motd");
                 }
@@ -494,6 +590,7 @@ const server = new Server({
                     shell.write(data);
 
                     console.log(data);
+
 
                     if (data.toString() === '\r') {
                         handleCommand(input);
@@ -568,12 +665,12 @@ const server = new Server({
                     if (command) {
                         userDB.stats.commands[command.name] = userDB.stats.commands[command.name] ? userDB.stats.commands[command.name] + 1 : 1;
                         var out = command.execute(input, currentUser);
-                        if (!out) return;
+                        if (out == false && out !== "") return;
 
                         var inputParts = input.split(' ');
                         if (inputParts[inputParts.length - 2] === '>') {
                             if (inputParts[inputParts.length - 1] === "") {
-                                shell.write(out);
+                                if (out != "") shell.write(out);
                             } else {
                                 var fileName = inputParts[inputParts.length - 1];
                                 if (fileName in navigateToPath(currentDir)) {
@@ -584,7 +681,7 @@ const server = new Server({
                             }
 
                         } else {
-                            shell.write(out);
+                            if (out != "") shell.write(out);
                         }
                     } else {
                         if (input !== "") {
@@ -613,7 +710,7 @@ const server = new Server({
     });
 })
 
-server.listen(22, '127.0.0.1', () => {
+server.listen(22, () => {
     fileSystem = db.get().fileSystem;
     users = db.get().users;
     console.log('Listening on port ' + server.address().port);

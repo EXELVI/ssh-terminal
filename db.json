@@ -26,7 +26,10 @@
       ],
       "home": "/root",
       "stats": {
-        "commands": {},
+        "commands": {
+          "ls": 1,
+          "cd": 2
+        },
         "files": 0,
         "directories": 0,
         "sudo": 0,
@@ -44,14 +47,69 @@
       ],
       "stats": {
         "commands": {
-          "ls": 32,
-          "cat": 5
+          "ls": 40,
+          "cat": 18,
+          "cd": 73,
+          "help": 1,
+          "exit": 1,
+          "touch": 1
         },
-        "files": 0,
+        "files": 1,
         "directories": 0,
         "sudo": 0,
         "uptime": 0,
         "lastLogin": "2024-08-04T19:53:56.190Z"
+      }
+    },
+    {
+      "username": "naveen",
+      "password": "",
+      "home": "/home/naveen",
+      "uid": 1003,
+      "groups": [
+        "naveen"
+      ],
+      "stats": {
+        "commands": {},
+        "files": 0,
+        "directories": 0,
+        "sudo": 0,
+        "uptime": 0,
+        "lastLogin": "2024-08-06T07:26:27.644Z"
+      }
+    },
+    {
+      "username": "max",
+      "password": "",
+      "home": "/home/max",
+      "uid": 1004,
+      "groups": [
+        "max"
+      ],
+      "stats": {
+        "commands": {},
+        "files": 0,
+        "directories": 0,
+        "sudo": 0,
+        "uptime": 0,
+        "lastLogin": "2024-08-06T07:26:32.339Z"
+      }
+    },
+    {
+      "username": "copate",
+      "password": "",
+      "home": "/home/copate",
+      "uid": 1005,
+      "groups": [
+        "copate"
+      ],
+      "stats": {
+        "commands": {},
+        "files": 0,
+        "directories": 0,
+        "sudo": 0,
+        "uptime": 0,
+        "lastLogin": "2024-08-06T07:29:26.083Z"
       }
     }
   ],
@@ -142,6 +200,150 @@
               }
             },
             "exelv": {
+              "type": "directory",
+              "owner": 0,
+              "lastModified": "2024-01-01T00:00:00.000Z",
+              "created": "2024-01-01T00:00:00.000Z",
+              "content": {
+                ".bash_history": {
+                  "type": "file",
+                  "owner": 0,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": ""
+                },
+                ".bashrc": {
+                  "type": "file",
+                  "owner": 0,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": ""
+                },
+                ".bash_aliases": {
+                  "type": "file",
+                  "owner": 0,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": ""
+                },
+                "desktop": {
+                  "type": "directory",
+                  "owner": 0,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": {
+                    "about.txt": {
+                      "type": "file",
+                      "owner": 1000,
+                      "lastModified": "2024-01-01T00:00:00.000Z",
+                      "created": "2024-01-01T00:00:00.000Z",
+                      "content": "<!DOCTYPE html>\n<span color='blue'>Hello, I'm exelvi</span>\n<span color='red'>I'm a developer</span>\n<span color='green'>I live in Veneto, Italy</span>\n\n\n<span hidden>Pssss... Also try to type 'color enable' and reopen me </span>"
+                    }
+                  }
+                },
+                "documents": {
+                  "type": "directory",
+                  "owner": 0,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": {}
+                }
+              }
+            },
+            "test.txt": {
+              "content": "",
+              "owner": 1002,
+              "lastModified": "2024-08-06T07:18:41.712Z",
+              "created": "2024-08-06T07:18:41.712Z",
+              "type": "file"
+            },
+            "naveen": {
+              "type": "directory",
+              "owner": 0,
+              "lastModified": "2024-01-01T00:00:00.000Z",
+              "created": "2024-01-01T00:00:00.000Z",
+              "content": {
+                ".bash_history": {
+                  "type": "file",
+                  "owner": 0,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": ""
+                },
+                ".bashrc": {
+                  "type": "file",
+                  "owner": 0,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": ""
+                },
+                ".bash_aliases": {
+                  "type": "file",
+                  "owner": 0,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": ""
+                },
+                "desktop": {
+                  "type": "directory",
+                  "owner": 0,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": {}
+                },
+                "documents": {
+                  "type": "directory",
+                  "owner": 0,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": {}
+                }
+              }
+            },
+            "max": {
+              "type": "directory",
+              "owner": 0,
+              "lastModified": "2024-01-01T00:00:00.000Z",
+              "created": "2024-01-01T00:00:00.000Z",
+              "content": {
+                ".bash_history": {
+                  "type": "file",
+                  "owner": 0,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": ""
+                },
+                ".bashrc": {
+                  "type": "file",
+                  "owner": 0,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": ""
+                },
+                ".bash_aliases": {
+                  "type": "file",
+                  "owner": 0,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": ""
+                },
+                "desktop": {
+                  "type": "directory",
+                  "owner": 0,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": {}
+                },
+                "documents": {
+                  "type": "directory",
+                  "owner": 0,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": {}
+                }
+              }
+            },
+            "copate": {
               "type": "directory",
               "owner": 0,
               "lastModified": "2024-01-01T00:00:00.000Z",
