@@ -534,7 +534,7 @@ const server = new Server({
             name: "su",
             description: "Change user",
             root: false,
-            execute: function (input) {
+            execute: function (input, currentUser, shell) {
                 var user = input.split(' ')[1];
 
                 var dbuser = users.find(u => u.username === user);
@@ -544,7 +544,7 @@ const server = new Server({
                     return `su: user '${user}' does not exist\r\n`;
                 }
 
-                if (dbuser.password != "") {
+                if (dbuser.password == "") {
                     userDB = dbuser;
                     if (userDB.uid != 0) {
                         lastUser = userDB.uid;
@@ -571,7 +571,6 @@ const server = new Server({
                 if (!url.startsWith('http://') && !url.startsWith('https://')) {
                     url = 'http://' + url;
                 }
-
                 mode = "waiting";
                 fetch(url, {
                     headers: {
@@ -590,7 +589,6 @@ const server = new Server({
                 });
                 return false;
             }
-
         },
         {
             name: "neofetch",
@@ -705,6 +703,54 @@ Options:
                     return false;
                 }
             }
+        },
+        {
+            name: 'adduser',
+            description: 'Create a new user',
+            root: true,
+            execute: function (input, currentUser, shell) {
+                var user = input.split(' ')[1];
+              if (input.includes('--help') || input.includes('-h') || user === undefined || user === "") {
+                  return `Usage: adduser LOGIN\r\n`
+              }
+
+                if (users.find(u => u.username === user)) {
+                    return `adduser: user '${user}' already exists\r\n`;
+                }
+
+                shell.write(`\r\nAdding user '${user}' ... `)
+                setTimeout(() => {
+                    var home = `/home/${user}`;
+                    var path = navigateToPath("/home", true);
+                    if (!path[user]) {
+                        shell.write(`done\r\nCopying files from '/etc/skel' ... `)
+                        if (navigateToPath("/etc/skel")) {
+                            fileSystemFunctions.copy("/etc/skel", home);
+                        }
+                        shell.write(`done\r\n`)
+                    } else {
+                        shell.write(`done\r\nThe home directory '${home}' already exists. Not copying files from '/etc/skel'\r\n`)
+                    }
+                    setTimeout(() => {
+                        var userUID = 1000 + users.length;
+                        var userJSON = {
+                            username: user,
+                            password: "",
+                            home: home,
+                            uid: userUID,
+                            groups: [user],
+                            stats: {
+                                commands: {},
+                                files: 0,
+                                directories: 0,
+                                sudo: 0,
+                                uptime: 0,
+                                lastLogin: new Date()
+                            }
+                        }
+                    }, 1000)
+                })
+            }
         }
     ]
 
@@ -783,7 +829,6 @@ Options:
                         });
 
                         frames.forEach((frame, index) => {
-                            console.log(PTY.cols)
                             setTimeout(() => {
                                 shell.write('\x1Bc');
                                 if (PTY.cols < 142) {
@@ -852,7 +897,7 @@ Options:
                                 if (userDB.uid != 0) {
                                     lastUser = userDB.uid;
                                 }
-                                shell.write('\r\n');
+                                shell.write('\x1B[2K\r');
                                 shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} `);
                                 mode = "normal";
                                 input = '';
@@ -865,7 +910,8 @@ Options:
                                     input = '';
                                     return;
                                 }
-                                shell.write('\r\nWrong password\r\nPassword: ');
+                                shell.write('\x1B[2K\r');
+                                shell.write('Wrong password\r\nPassword: ');
                                 input = '';
                                 return;
 
@@ -877,7 +923,8 @@ Options:
                             if (passwdMode == "c") {
                                 if (users.find(u => u.username === user).password === input) {
                                     mode = "passwd-n-" + user;
-                                    shell.write('\r\nNew password: ');
+                                    shell.write('\x1B[2K\r');
+                                    shell.write('New password: ');
                                     input = '';
                                     return;
                                 } else {
@@ -889,7 +936,8 @@ Options:
                                         input = '';
                                         return;
                                     }
-                                    shell.write('\r\nWrong password\r\nPassword: ');
+                                    shell.write('\x1B[2K\r');
+                                    shell.write('Wrong password\r\nCurrent password: ');
                                     input = '';
                                     return;
                                 }
@@ -897,7 +945,8 @@ Options:
                                 mode = "passwd-cc-" + user;
                                 input = '';
                                 passwordTemp = input;
-                                shell.write('\r\nConfirm password: ');
+                                shell.write('\x1B[2K\r');
+                                shell.write('Confirm password: ');
                             } else if (passwdMode == "cc") {
                                 if (input === passwordTemp) {
                                     users.find(u => u.username === user).password = input;
@@ -913,10 +962,36 @@ Options:
                                     return;
                                 }
                             }
-                        } else {
+                        } else if (mode.startsWith("sudo-")) {
+                             let user = userDB.uid
+                            let inputC = mode.split("sudo-")[1]
+                            if (users.find(u => u.uid === user)?.password === input) {
+                                sudoLogin = true;
+                                mode = "normal";
+                                tries = 0;
+                                shell.write('\x1B[2K\r');
+                                handleCommand("sudo " + inputC, false);
+                            } else {
+                                tries++;
+                                if (tries > 2) {
+                                    shell.write('sudo: Authentication failure\r\n');
+                                    shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} `);
+                                    mode = "normal";
+                                    input = '';
+                                    tries = 0;
+                                    return;
+                                }
+                                shell.write('\x1B[2K\r');
+                                shell.write('Wrong password\r\nPassword: ');
+                                input = '';
+                                return;
+                            }
+
+                        } else  {
                             handleCommand(input);
                             input = '';
                         }
+                    
 
                     } else if (data.toString() === '\u0003') {
                         shell.write('^C');

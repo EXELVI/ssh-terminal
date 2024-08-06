@@ -29,8 +29,9 @@
         "commands": {
           "ls": 1,
           "cd": 2,
-          "exit": 5,
-          "su": 2
+          "exit": 6,
+          "su": 2,
+          "whoami": 2
         },
         "files": 0,
         "directories": 0,
@@ -53,19 +54,19 @@
           "cat": 18,
           "cd": 79,
           "help": 6,
-          "exit": 6,
+          "exit": 8,
           "touch": 1,
-          "su": 10,
-          "whoami": 2,
+          "su": 13,
+          "whoami": 16,
           "curl": 17,
           "neofetch": 9,
           "usermod": 5,
-          "passwd": 3
+          "passwd": 4
         },
         "files": 1,
         "directories": 0,
-        "sudo": 0,
-        "uptime": 33879,
+        "sudo": 6,
+        "uptime": 3082189,
         "lastLogin": "2024-08-04T19:53:56.190Z"
       }
     }
