@@ -27,15 +27,15 @@
       "home": "/root",
       "stats": {
         "commands": {
-          "ls": 1,
+          "ls": 2,
           "cd": 2,
           "exit": 6,
           "su": 2,
-          "whoami": 2
+          "whoami": 3
         },
         "files": 0,
         "directories": 0,
-        "sudo": 0,
+        "sudo": 1,
         "uptime": 1576,
         "lastLogin": 0
       }
@@ -50,20 +50,22 @@
       ],
       "stats": {
         "commands": {
-          "ls": 41,
-          "cat": 18,
-          "cd": 79,
+          "ls": 46,
+          "cat": 23,
+          "cd": 81,
           "help": 6,
           "exit": 8,
           "touch": 1,
-          "su": 13,
+          "su": 15,
           "whoami": 16,
           "curl": 17,
           "neofetch": 9,
           "usermod": 5,
-          "passwd": 4
+          "passwd": 4,
+          "echo": 1,
+          "sh": 5
         },
-        "files": 1,
+        "files": 2,
         "directories": 0,
         "sudo": 6,
         "uptime": 3082189,
@@ -205,6 +207,13 @@
                   "lastModified": "2024-01-01T00:00:00.000Z",
                   "created": "2024-01-01T00:00:00.000Z",
                   "content": {}
+                },
+                "file.sh": {
+                  "content": "",
+                  "owner": 1002,
+                  "lastModified": "2024-08-06T15:05:08.673Z",
+                  "created": "2024-08-06T15:05:08.673Z",
+                  "type": "file"
                 }
               }
             },

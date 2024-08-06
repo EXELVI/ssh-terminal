@@ -177,6 +177,7 @@ function parseCommand(command) {
 
 const db = require('./db');
 const { create } = require('domain');
+const { exec } = require('child_process');
 
 const key = generateKeyPairSync('rsa', {
     bits: 2048
@@ -710,9 +711,9 @@ Options:
             root: true,
             execute: function (input, currentUser, shell) {
                 var user = input.split(' ')[1];
-              if (input.includes('--help') || input.includes('-h') || user === undefined || user === "") {
-                  return `Usage: adduser LOGIN\r\n`
-              }
+                if (input.includes('--help') || input.includes('-h') || user === undefined || user === "") {
+                    return `Usage: adduser LOGIN\r\n`
+                }
 
                 if (users.find(u => u.username === user)) {
                     return `adduser: user '${user}' already exists\r\n`;
@@ -750,6 +751,71 @@ Options:
                         }
                     }, 1000)
                 })
+            }
+        },
+        {
+            name: "userdel",
+            root: true,
+            description: "Delete a user",
+            execute: function (input, currentUser, shell) {
+                var user = input.split(' ')[1];
+                if (input.includes('--help') || input.includes('-h') || user === undefined || user === "") {
+                    output.textContent = `Usage: userdel LOGIN
+
+Options:
+  -h, --help                    display this help message and exit
+  -r, --remove                  remove home directory`
+                    return output;
+                }
+                if (!users.find(u => u.username === user)) {
+                    return `userdel: user '${user}' does not exist\r\n`;
+                }
+                user = users.find(u => u.username === user);
+                if (user.uid === 0) {
+                    return `userdel: user '${user.username}' is currently used by process 1\r\n`;
+                }
+                if (user.UID === currentUser) {
+                    return `userdel: user '${user.username}' is currently used by process 1097\r\n`;
+                }
+                shell.write(`\r\nRemoving user '${user.username}' ... `)
+                setTimeout(() => {
+                    if (input.includes('--remove') || input.includes('-r')) {
+                        shell.write(`done\r\nRemoving home directory '${user.home}' ... `)
+                        setTimeout(() => {
+                            delete navigateToPath(user.home, true)[getFileName(user.home)];
+                            shell.write(`done\r\n`)
+                        }, 1000)
+                    } else {
+                        shell.write(`done\r\n`)
+                    }
+                    setTimeout(() => {
+                        users = users.filter(u => u.username !== user.username);
+                        shell.write(`User '${user.username}' removed\r\n`)
+                    }, 1500)
+                }, 1000)
+            }
+        },
+        {
+            name: "sh",
+            root: true,
+            description: "Run a shell command",
+            execute: function (input, currentUser, shell, handleCommand) {
+                let file = input.split(' ')[1];
+                if (file) {
+                    let target = navigateToPath(file, false, false);
+                    if (!target) target = navigateToPath(`${currentDir}/${file}`, false, false);
+                    if (!target) return `sh: ${file}: No such file or directory\r\n`;
+
+                    let content = target.content;
+                    if (!content) return `sh: ${file}: No such file or directory\r\n`;
+                    var lines = content.split('\n');
+                    lines.forEach((line, index) => {
+                        handleCommand(line, false)
+                    });
+
+
+                }
+
             }
         }
     ]
@@ -963,7 +1029,7 @@ Options:
                                 }
                             }
                         } else if (mode.startsWith("sudo-")) {
-                             let user = userDB.uid
+                            let user = userDB.uid
                             let inputC = mode.split("sudo-")[1]
                             if (users.find(u => u.uid === user)?.password === input) {
                                 sudoLogin = true;
@@ -987,11 +1053,11 @@ Options:
                                 return;
                             }
 
-                        } else  {
+                        } else {
                             handleCommand(input);
                             input = '';
                         }
-                    
+
 
                     } else if (data.toString() === '\u0003') {
                         shell.write('^C');
@@ -1065,7 +1131,7 @@ Options:
 
                     if (command) {
                         userDB.stats.commands[command.name] = userDB.stats.commands[command.name] ? userDB.stats.commands[command.name] + 1 : 1;
-                        var out = command.execute(input, currentUser, shell);
+                        var out = command.execute(input, currentUser, shell, this);
                         if (out == false && out !== "") return;
 
                         var inputParts = input.split(' ');
