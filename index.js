@@ -6,6 +6,7 @@ const { utils: { parseKey }, Server } = require('ssh2');
 const ssh2 = require('ssh2')
 const figlet = require('figlet');
 const fetch = require('node-fetch');
+const chalk = require('chalk');
 ssh2.createAgent("pageant")
 
 var instanceName = "server"
@@ -55,7 +56,7 @@ const fileSystemFunctions = {
             navigateToPath(path, true)[getFileName(path)].content = content;
             navigateToPath(path, true)[getFileName(path)].lastModified = new Date();
             navigateToPath(path, true)[getFileName(path)].size = content.length;
-            
+
         } else {
             throw new Error('Path not found');
         }
@@ -891,6 +892,110 @@ Options:
                     return `tree: ${error.message}\r\n`;
                 }
             }
+        },
+        {
+            name: "stats",
+            description: "Display user statistics",
+            root: false,
+            execute: function (input, currentUser, shell) {
+                var parsed = parseCommand(input);
+                var user = parsed['input'] || users.find(user => user.uid === currentUser).username;
+                if (parsed['-help'] || parsed['h']) {
+                    let output = `Usage: stats [OPTION] [USER]
+
+Options:
+    -c, --commands            display command statistics
+    -complete, -all           display all statistics`;
+
+                    var outputFinal = ""
+                    output.split("\n").forEach((line, index) => {
+                        outputFinal += line + "\r\n";
+                    })
+                    return outputFinal;
+                
+                }
+
+                if (!users.find(u => u.username === user)) {
+                    return `stats: user '${user}' does not exist\r\n`;
+                }
+
+                function randomReadableColor() {
+                    var r = Math.floor(Math.random() * 256);
+                    var g = Math.floor(Math.random() * 256);
+                    var b = Math.floor(Math.random() * 256);
+                    if (r + g + b < 60) return randomReadableColor();
+                    return { r, g, b };
+                }
+                let mostUsedCommand,
+                    totalCommands
+
+                if (Object.keys(user.stats.commands).length > 0) {
+                    mostUsedCommand = Object.keys(user.stats.commands).reduce((a, b) => user.stats.commands[a] > user.stats.commands[b] ? a : b);
+                    totalCommands = Object.keys(user.stats.commands).reduce((a, b) => a + b).length;
+                } else {
+                    mostUsedCommand = "N/A";
+                    totalCommands = 0;
+                }
+
+
+                let output = `stats: ${input.split(' ')[1]}: invalid argument\r\n`
+
+                if (parsed['-c'] || parsed['-commands']) {
+
+                    let commandStats = Object.keys( user.stats.commands).sort((a, b) => user.stats.commands[b] - user.stats.commands[a]).map(cmd => {
+                        return `${cmd}:${' '.repeat(15 - cmd.length)}${stats.commands[cmd]} times`;
+                    }).join('\r\n');
+
+                    output = `Command statistics for ${user}: \r\n`
+                    output += `Most used command: ${mostUsedCommand}\r\n`
+                    output += `Total commands: ${totalCommands}\r\n`
+                    output += `----------------------------------------\r\n`
+                    output += `Commands:\r\n`
+                    output += commandStats;
+
+                } else if (parsed['-complete'] || parsed['-all']) {
+                    output = `Statistics for user '${user}':
+Total commands: ${totalCommands}
+Most used command: ${mostUsedCommand}
+Files created: ${userDB.stats.files}
+Directories created: ${userDB.stats.directories}
+Sudo commands: ${userDB.stats.sudo}
+Time spent: ${formatMilliseconds(userDB.stats.uptime)}
+Last login: ${userDB.stats.lastLogin.toLocaleString()}
+`;
+
+                } else {
+                    output = `Statistics for user '${user}':
+                    Total commands: ${totalCommands}
+                    Most used command: ${mostUsedCommand}
+                    Files created: ${userDB.stats.files}
+                    Time spent: ${formatMilliseconds(userDB.stats.uptime)}
+                    Last login: ${userDB.stats.lastLogin.toLocaleString()}
+                    `;
+                }
+
+                var startColor = randomReadableColor();
+                var endColor = randomReadableColor();
+
+                var steps = output.split('\n').length;
+
+                //use chalk to colorize the output
+                let fade = [];
+                for (let i = 0; i < steps; i++) {
+                    fade.push(
+                        Math.floor(startColor.r + (endColor.r - startColor.r) * i / steps) + ',' +
+                        Math.floor(startColor.g + (endColor.g - startColor.g) * i / steps) + ',' +
+                        Math.floor(startColor.b + (endColor.b - startColor.b) * i / steps)
+                    );
+                }
+
+                output.split('\n').forEach((line, index) => {
+                    shell.write(`\x1B[38;2;${fade[index]}m${line}\x1B[0m\r\n`);
+                })
+
+                return "";
+
+            }
         }
     ]
 
@@ -1221,7 +1326,7 @@ Options:
                                 tabMachPosition = 0;
                                 tabMachCommandPosition = 0;
                                 first = false;
-            
+
                                 hinput = input
                                 command = hinput.split(' ')[0];
                                 commandList = commands.map(function (command) {
@@ -1253,7 +1358,7 @@ Options:
                                 } else {
                                     input = matchingCommands[0];
                                     shell.write('\x1B[2K\r');
-                                    shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} ${input}`);                       
+                                    shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} ${input}`);
                                 }
                             } else if (matchingCommands.length > 1) {
                                 input = matchingCommands[tabMachCommandPosition];
@@ -1270,9 +1375,9 @@ Options:
                         let bashHistory = fileSystemFunctions.getBashHistory(userDB).split('\n');
                         if (hystoryPosition < bashHistory.length) {
                             hystoryPosition++;
-                            input =bashHistory[bashHistory.length - hystoryPosition];
+                            input = bashHistory[bashHistory.length - hystoryPosition];
                             shell.write('\x1B[2K\r');
-                            shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} ${input}`);                    
+                            shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} ${input}`);
                         }
                     } else if (data.toString() === '\u001b[B') {
                         let bashHistory = fileSystemFunctions.getBashHistory(userDB).split('\n');
@@ -1280,27 +1385,27 @@ Options:
                             hystoryPosition--;
                             input = bashHistory[bashHistory.length - hystoryPosition];
                             shell.write('\x1B[2K\r');
-                            shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} ${input}`);                    
-                        } 
+                            shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} ${input}`);
+                        }
                     } else {
                         input += data;
                         if (!mode.startsWith("passwd") && !mode.startsWith("supassword") && !mode.startsWith("sudo")) shell.write(data);
                         tabMachPosition = 0;
                         tabMachCommandPosition = 0;
                         first = true;
-                    } 
+                    }
                 });
 
 
                 function handleCommand(input, out = true) {
-                    var output = '';
+                    let output = '';
                     hystoryPosition = 1;
                     try {
                         fileSystemFunctions.addToBashHistory(userDB, input);
                     } catch (error) {
                         console.log(error)
                     }
-                    output += `${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} ${input}\r\n`;
+                    output += `${userDB.uid == 0 ? '\r\n\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} ${input}\r\n`;
 
                     if (out) {
                         shell.write(output);
@@ -1375,8 +1480,8 @@ Options:
                         }
                     }
 
-                    shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} `);
 
+                    shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} `);
                 }
 
             });

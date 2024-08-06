@@ -50,15 +50,15 @@
       ],
       "stats": {
         "commands": {
-          "ls": 61,
+          "ls": 62,
           "cat": 92,
           "cd": 90,
-          "help": 12,
+          "help": 18,
           "exit": 8,
           "touch": 1,
           "su": 15,
           "whoami": 16,
-          "curl": 17,
+          "curl": 18,
           "neofetch": 10,
           "usermod": 5,
           "passwd": 4,
@@ -67,12 +67,13 @@
           "tree": 12,
           "adduser": 2,
           "date": 4,
-          "clear": 2
+          "clear": 5,
+          "stats": 9
         },
         "files": 6,
         "directories": 0,
         "sudo": 6,
-        "uptime": 3287411,
+        "uptime": 3294894,
         "lastLogin": "2024-08-04T19:53:56.190Z"
       }
     },
@@ -257,10 +258,10 @@
                 ".bash_history": {
                   "type": "file",
                   "owner": 0,
-                  "lastModified": "2024-08-06T18:54:35.964Z",
+                  "lastModified": "2024-08-06T20:00:43.969Z",
                   "created": "2024-01-01T00:00:00.000Z",
-                  "content": "help\n",
-                  "size": 5
+                  "content": "help\nhelp\nhelp\nhelp\nhelp\nls\nstats\nstats\nstats\n\nstats\nstats\nstats\nstats\nstats\nhelp\na\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nclear\n\n\n\n\n\n\n\n\n\nclear\ncurl\n\n\n\n\n\nclear\nstats\n\n\n\na\nv\na\n\na\n\na\n\n\n\n\n\n\n\n\n\n\nhelp\n",
+                  "size": 206
                 },
                 ".bashrc": {
                   "type": "file",
