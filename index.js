@@ -15,6 +15,29 @@ var hystoryPosition = 0;
 let fileSystem = {}
 let users = []
 
+function formatMilliseconds(ms, short = false) {
+    let seconds = Math.floor(ms / 1000);
+    let minutes = Math.floor(seconds / 60);
+    let hours = Math.floor(minutes / 60);
+
+    seconds %= 60;
+    minutes %= 60;
+
+    let result = [];
+    if (hours > 0) {
+        result.push(hours + (short ? " h " : " hour" + (hours > 1 ? "s" : "")));
+    }
+    if (minutes > 0) {
+        result.push(minutes + (short ? " m" : " minute" + (minutes > 1 ? "s" : "")));
+    }
+    if (seconds > 0 || result.length === 0) {
+        result.push(seconds + (short ? "s " : " second" + (seconds > 1 ? "s" : "")));
+    }
+
+    return result.join(" and ");
+}
+
+
 const fileSystemFunctions = {
     createFile: function (userDB, path, content = '',) {
         const parentDir = navigateToPath(path, true);
@@ -128,6 +151,29 @@ function getFileName(path) {
     return parts[parts.length - 1];
 }
 
+function parseCommand(command) {
+    const parts = command.split(' ');
+    const result = {};
+    let input = "";
+
+    for (let i = 0; i < parts.length; i++) {
+        if (parts[i].startsWith('-')) {
+            const arg = parts[i].substring(1);
+            const value = parts[i + 1];
+            result[arg] = value;
+            i++;
+        } else if (i === parts.length - 1) {
+            input = parts[i];
+        }
+    }
+
+    if (input) {
+        result['input'] = input;
+    }
+
+    return result;
+}
+
 
 const db = require('./db');
 const { create } = require('domain');
@@ -173,6 +219,7 @@ const server = new Server({
      * @property {number} stats.sudo
      * @property {number} stats.uptime
      */
+    var start = new Date()
     var userDB = {
         username: '',
         password: '',
@@ -550,13 +597,13 @@ const server = new Server({
             description: "Display system information",
             root: false,
             execute: function (input, currentUser, shell) {
-                var infos = ["OS: ExelviOS", "Kernel: 5.4.0-80-generic"];
-                var asciiArt = figlet.textSync('E', { font: 'Colossal' });
+                let first = users.find(user => user.uid === currentUser).username + "@" + instanceName
+                let infos = [first, "-".repeat(first.length), "OS: ExelviOS", "Kernel: 5.4.0-80-generic", "Uptime: " + formatMilliseconds(new Date() - start), "Shell: bash", "Terminal: " + PTY.term]
+                let asciiArt = figlet.textSync('E', { font: 'Colossal' });
                 asciiArt = asciiArt.split("\n").map((line, index) => {
-                    //set "asciiline     infos"
                     if (infos[index]) {
 
-                        return line + " ".repeat(PTY.cols - line.length - infos[index].length) + infos[index] + "\r\n";
+                        return line + " ".repeat(10) + (index == 1 || index == 0 ? "\x1B[32m" : "\x1B[34m") + infos[index] + "\x1B[0m\r\n";
                     } else {
                         return line + "\r\n";
                     }
@@ -565,7 +612,69 @@ const server = new Server({
 
             }
         },
-        
+        {
+            name: "usermod",
+            description: "Modify user account",
+            root: false,
+            execute: function (input, currentUser, shell) {
+                var inputParsed = parseCommand(input);
+
+                if (input.includes('--help') || input.includes('-h')) {
+                    var output = `Usage: usermod [options] LOGIN
+
+Options: 
+
+  -d, --home HOME_DIR           new home directory for the user account
+  -h, --help                    display this help message and exit
+  -l, --login NEW_LOGIN         new value of the login name
+  -m, --move-home               move contents of the home directory to the
+
+`;
+                    var outputFinal = ""
+                    output.split("\n").forEach((line, index) => {
+                        outputFinal += line + "\r\n";
+                    })
+                    return outputFinal;
+                }
+
+                if (inputParsed['l'] || inputParsed['-login']) {
+                    var user = inpudParsed['input'];
+                    if (user == undefined || user == "") {
+                        user = users.find(user => user.uid === currentUser).username;
+                    }
+                    if (!users.find(user => user.username === user)) {
+                        return `usermod: user '${user}' does not exist\r\n`;
+                    }
+                    if (userDB.uid == user) {
+                        return `usermod: user '${user}' is currently used by process 1097\r\n`;
+                    } else if (users.find(u => u.name == user).UID === 0) {
+                        return `usermod: user '${user}' is currently used by process 1\r\n`;
+                    } else {
+                        users.find(user => user.username === user).username = inputParsed['l'] || inputParsed['-login'];
+                        return '';
+                    }                    
+                }
+
+                if (inputParsed['d'] || inputParsed['-home']) {
+                    var user = inputParsed['input'];
+                    if (user === undefined || user === "") {
+                        user = users.find(user => user.uid === currentUser).username;
+                    }
+                    if (settings.users.find(u => u.name == user)?.UID === 0) {
+                        return `usermod: user '${user}' is currently used by process 1\r\n`;
+                    } else if (!users.find(user => user.username === user)) {
+                        return `usermod: user '${user}' does not exist\r\n`;
+                    }
+                 
+                    if (inputParsed['m'] || inputParsed['-move-home']) {
+                        fileSystemFunctions.move(users.find(user => user.username === user).home, inputParsed['d'] || inputParsed['-home']);
+                    }
+                    users.find(user => user.username === user).home = inputParsed['d'] || inputParsed['-home'];
+                }
+            }
+        }
+
+
 
 
     ]
@@ -603,6 +712,7 @@ const server = new Server({
     }).on('ready', () => {
         console.log('Client authenticated!');
         console.log('User:', userDB);
+        start = new Date()
 
         client.on('session', (accept, reject) => {
             const session = accept()
@@ -671,6 +781,8 @@ const server = new Server({
 
                     return
                 }
+
+
 
                 var motd = ""
                 if (navigateToPath("/etc/motd")) {
@@ -846,6 +958,7 @@ const server = new Server({
         })
     }).on('close', () => {
         console.log('Client disconnected');
+        userDB.stats.uptime += new Date() - start;
     }).on('error', (err) => {
         console.error('Client error:', err);
     });

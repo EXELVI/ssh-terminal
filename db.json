@@ -35,7 +35,7 @@
         "files": 0,
         "directories": 0,
         "sudo": 0,
-        "uptime": 0,
+        "uptime": 1576,
         "lastLogin": 0
       }
     },
@@ -52,18 +52,19 @@
           "ls": 41,
           "cat": 18,
           "cd": 79,
-          "help": 3,
-          "exit": 4,
+          "help": 5,
+          "exit": 6,
           "touch": 1,
           "su": 9,
           "whoami": 2,
           "curl": 17,
-          "neofetch": 1
+          "neofetch": 9,
+          "usermod": 4
         },
         "files": 1,
         "directories": 0,
         "sudo": 0,
-        "uptime": 0,
+        "uptime": 33879,
         "lastLogin": "2024-08-04T19:53:56.190Z"
       }
     }
