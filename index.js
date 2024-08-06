@@ -74,20 +74,19 @@ const fileSystemFunctions = {
     },
     tree: function (path, indent = '') {
         let treeOutput = '';
-        const target = navigateToPath(path);
-
+        const target = navigateToPath(path, false, false);
+        console.log(path, target)
         if (target.type !== 'directory') {
             throw new Error('Path not found');
         }
-
-        const keys = Object.keys(target);
-        keys.forEach((key, index) => {
-            const isLast = index === keys.length - 1;
+        for (const [key, value] of Object.entries(target.content)) {
+            const isLast = Object.keys(target.content).indexOf(key) === Object.keys(target.content).length - 1;
             treeOutput += indent + (isLast ? '└── ' : '├── ') + key + '\n';
-            if (target[key].type === 'directory') {
+            if (value.type === 'directory') {
                 treeOutput += this.tree(`${path}/${key}`, indent + (isLast ? '    ' : '│   '));
             }
-        });
+        }
+
 
         return treeOutput;
     },
@@ -336,11 +335,10 @@ const server = new Server({
                     return 'cat: missing file operand\r\n';
                 }
                 try {
-                    var target = navigateToPath(`${fileName}`);
+                    var target = fileSystemFunctions.readFileContent(fileName);
+                    if (!target) target = fileSystemFunctions.readFileContent(`${currentDir}/${fileName}`);
                     console.log(target)
-                    if (!target) target = navigateToPath(`${currentDir}/${fileName}`);
-                    console.log(target)
-                    var content = target.content;
+                    var content = target;
                     if (!content) {
                         return `cat: ${fileName}: No such file or directory\r\n`;
                     }
@@ -749,8 +747,14 @@ Options:
                                 lastLogin: new Date()
                             }
                         }
+                        mode = "adduser-passn-" + user;
+                        shell.write('New password: ');
+                        tries = 0;
+                        users.push(userJSON);
+                        
                     }, 1000)
                 })
+                return false;
             }
         },
         {
@@ -802,8 +806,8 @@ Options:
             execute: function (input, currentUser, shell, handleCommand) {
                 let file = input.split(' ')[1];
                 if (file) {
-                    let target = navigateToPath(file, false, false);
-                    if (!target) target = navigateToPath(`${currentDir}/${file}`, false, false);
+                    let target = fileSystemFunctions.readFileContent(file);
+                    if (!target) target = fileSystemFunctions.readFileContent(`${currentDir}/${file}`);
                     if (!target) return `sh: ${file}: No such file or directory\r\n`;
 
                     let content = target.content;
@@ -816,6 +820,57 @@ Options:
 
                 }
 
+            }
+        },
+        {
+            name: "wget",
+            description: "Download a file from the internet",
+            root: false,
+            execute: function (input, currentUser, shell) {
+                var url = input.split(' ')[1];
+                if (!url) {
+                    return 'wget: missing URL operand\r\n';
+                }
+                if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                    url = 'http://' + url;
+                }
+                mode = "waiting";
+                fetch(url, {
+                    headers: {
+                        "User-Agent": "Wget/1.20.3"
+                    }
+                }).then(response => response.text()).then(body => {
+                    var target = input.split(' ')[2];
+                    if (!target) {
+                        target = url.split('/').pop();
+                    }
+                    fileSystemFunctions.createFile(userDB, `${currentDir}/${target}`, body);
+                    mode = "normal";
+                    shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} `);
+                }).catch(error => {
+                    shell.write(`wget: ${error.message}\r\n`);
+                    mode = "normal";
+                    shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} `);
+                });
+                return false;
+            }
+        },
+        {
+            name: "tree",
+            description: "Display directory tree",
+            root: false,
+            execute: function (input, currentUser, shell) {
+                var path = input.split(' ')[1] || "/";
+                try {
+                    let result = fileSystemFunctions.tree(path);
+                    console.log(result)
+                    result.split('\n').forEach((line, index) => {
+                        shell.write(line + '\r\n');
+                    });
+                    return '';
+                } catch (error) {
+                    return `tree: ${error.message}\r\n`;
+                }
             }
         }
     ]
@@ -1053,6 +1108,48 @@ Options:
                                 return;
                             }
 
+                        } else if (mode.startsWith("adduser-")) {
+                            let mod = mode.split("-")[1];
+                            let user = mode.split("-")[2];
+                            
+                            if (mod == "passn") {
+                                mode = "adduser-passc-" + user;
+                                input = '';
+                                passwordTemp = input;
+                                shell.write('\x1B[2K\r');
+                                shell.write('Confirm password: ');
+
+                            } else if (mod == "passc") {
+                                if (input === passwordTemp) {
+                                    users.find(u => u.username === user).password = input;
+                                    shell.write('\r\n');
+                                    shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} `);
+                                    mode = "normal";
+                                    input = '';
+                                } else {
+                                    shell.write('\r\nSorry, passwords do not match\r\n');
+                                    shell.write('passwd: Authentication token manipulation error\r\npasswd: password unchanged\r\n');
+                                    shell.write(`Try again [y/n]: `);
+                                    mode = "confirm-adduser-passn-" + user;
+                                    input = '';
+                                    return; 
+
+                                }
+                            }
+                        } else if (mode.startsWith("confirm-")) {
+                            let functionString = mode.split("confirm-")[1];
+
+                            if (input == "y") {
+                                shell.write('\r\n');
+                                shell.write(`New password: `);
+                                input = '';
+                                mode = functionString;
+                            } else {
+                                shell.write('\r\n');
+                                shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} `);
+                                mode = "normal";
+                                input = '';
+                            }
                         } else {
                             handleCommand(input);
                             input = '';
