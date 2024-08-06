@@ -5,7 +5,7 @@ const { utils: { generateKeyPairSync } } = require('ssh2');
 const { utils: { parseKey }, Server } = require('ssh2');
 const ssh2 = require('ssh2')
 const figlet = require('figlet');
-
+const fetch = require('node-fetch');
 ssh2.createAgent("pageant")
 
 var instanceName = "server"
@@ -457,7 +457,7 @@ const server = new Server({
             name: "exit",
             description: "Exit the terminal",
             root: false,
-            execute: function () {
+            execute: function (input, currentUser, shell) {
                 if (userDB.uid != 0 && lastUser != 0) {
                     shell.write('Bye!\x1B[0m\r\n');
                     shell.end();
@@ -492,7 +492,7 @@ const server = new Server({
 
                 var dbuser = users.find(user => user.username === user);
                 if (!user) dbuser = users.find(user => user.uid === 0);
-
+                console.log(user, dbuser)
                 if (!dbuser) {
                     return `su: user '${user}' does not exist\r\n`;
                 }
@@ -511,13 +511,70 @@ const server = new Server({
                 }
 
             }
-        }
+        },
+        {
+            name: "curl",
+            description: "Fetch a file from the internet",
+            root: false,
+            execute: function (input, currentUser, shell) {
+                var url = input.split(' ')[1];
+                if (!url) {
+                    return 'curl: missing URL operand\r\n';
+                }
+                if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                    url = 'http://' + url;
+                }
+
+                mode = "waiting";
+                fetch(url, {
+                    headers: {
+                        "User-Agent": "curl/7.68.0"
+                    }
+                }).then(response => response.text()).then(body => {
+                    body.split('\n').forEach((line, index) => {
+                        shell.write(line + '\r\n');
+                    });
+                    mode = "normal";
+                    shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} `);
+                }).catch(error => {
+                    shell.write(`curl: ${error.message}\r\n`);
+                    mode = "normal";
+                    shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} `);
+                });
+                return false;
+            }
+
+        },
+        {
+            name: "neofetch",
+            description: "Display system information",
+            root: false,
+            execute: function (input, currentUser, shell) {
+                var infos = ["OS: ExelviOS", "Kernel: 5.4.0-80-generic"];
+                var asciiArt = figlet.textSync('E', { font: 'Colossal' });
+                asciiArt = asciiArt.split("\n").map((line, index) => {
+                    //set "asciiline     infos"
+                    if (infos[index]) {
+
+                        return line + " ".repeat(PTY.cols - line.length - infos[index].length) + infos[index] + "\r\n";
+                    } else {
+                        return line + "\r\n";
+                    }
+                }).join("\n");
+                return asciiArt;
+
+            }
+        },
+        
+
 
     ]
 
     client.on('authentication', (ctx) => {
         authCtx = ctx;
-        console.log(ctx)
+
+        console.log(client._sock.remoteAddress + ' is trying to authenticate with ' + ctx.method + ' method as ' + ctx.username);
+
         if (!ctx.username) return ctx.reject();
         if (ctx.username === 'rick') return ctx.accept();
         if (ctx.username === "clock") return ctx.accept();
@@ -641,6 +698,7 @@ const server = new Server({
 
 
                     if (data.toString() === '\r') {
+                        if (mode === "waiting") return;
                         if (mode.startsWith("supassword-")) {
                             const user = mode.split("-")[1]
                             const dbuser = users.find(user => user.username === user);
@@ -676,8 +734,9 @@ const server = new Server({
                         }
 
                     } else if (data.toString() === '\u0003') {
-                        shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} `);
                         shell.write('^C');
+                        shell.write(`\r\n${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} `);
+
                         mode = "normal";
                         input = '';
                     } else if (data.toString() === '\u007F') {
@@ -746,7 +805,7 @@ const server = new Server({
 
                     if (command) {
                         userDB.stats.commands[command.name] = userDB.stats.commands[command.name] ? userDB.stats.commands[command.name] + 1 : 1;
-                        var out = command.execute(input, currentUser);
+                        var out = command.execute(input, currentUser, shell);
                         if (out == false && out !== "") return;
 
                         var inputParts = input.split(' ');
