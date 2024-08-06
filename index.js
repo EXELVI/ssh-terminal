@@ -537,7 +537,7 @@ const server = new Server({
             execute: function (input) {
                 var user = input.split(' ')[1];
 
-                var dbuser = users.find(user => user.username === user);
+                var dbuser = users.find(u => u.username === user);
                 if (!user) dbuser = users.find(user => user.uid === 0);
                 console.log(user, dbuser)
                 if (!dbuser) {
@@ -652,7 +652,7 @@ Options:
                     } else {
                         users.find(user => user.username === user).username = inputParsed['l'] || inputParsed['-login'];
                         return '';
-                    }                    
+                    }
                 }
 
                 if (inputParsed['d'] || inputParsed['-home']) {
@@ -665,18 +665,47 @@ Options:
                     } else if (!users.find(user => user.username === user)) {
                         return `usermod: user '${user}' does not exist\r\n`;
                     }
-                 
+
                     if (inputParsed['m'] || inputParsed['-move-home']) {
                         fileSystemFunctions.move(users.find(user => user.username === user).home, inputParsed['d'] || inputParsed['-home']);
                     }
                     users.find(user => user.username === user).home = inputParsed['d'] || inputParsed['-home'];
                 }
             }
+        },
+        {
+            name: "passwd",
+            description: "Change user password",
+            root: false,
+            execute: function (input, currentUser, shell) {
+                var inputParsed = parseCommand(input);
+
+                if (input.includes('--help') || input.includes('-h')) {
+                    return `Usage: passwd [options] LOGIN`
+                }
+
+                var user = input.split(' ')[1];
+                if (user === undefined || user === "") {
+                    user = users.find(user => user.uid === currentUser).username;
+                }
+
+                if (!users.find(u => u.username === user)) {
+                    return `passwd: user '${user}' does not exist\r\n`;
+                }
+
+                if (currentUser != 0) {
+                    mode = "passwd-c-" + user;
+                    shell.write('Current password: ');
+                    tries = 0;
+                    return false;
+                } else {
+                    mode = "passwd-n-" + user;
+                    shell.write('New password: ');
+                    tries = 0;
+                    return false;
+                }
+            }
         }
-
-
-
-
     ]
 
     client.on('authentication', (ctx) => {
@@ -801,19 +830,22 @@ Options:
 
 
                 var input = '';
+                var passwordTemp = '';
                 shell.on('data', function (data) {
 
                     console.log('Data:', data.toString());
-                    shell.write(data);
-
                     console.log(data);
+
+                    if (!mode.startsWith("passwd") && !mode.startsWith("supassword") && !mode.startsWith("sudo")) shell.write(data);
+
+
 
 
                     if (data.toString() === '\r') {
                         if (mode === "waiting") return;
                         if (mode.startsWith("supassword-")) {
-                            const user = mode.split("-")[1]
-                            const dbuser = users.find(user => user.username === user);
+                            let user = mode.split("-")[1]
+                            let dbuser = users.find(u => u.username === user);
 
                             if (dbuser.password === input) {
                                 userDB = dbuser;
@@ -838,8 +870,49 @@ Options:
                                 return;
 
                             }
+                        } else if (mode.startsWith("passwd-")) {
+                            const passwdMode = mode.split("-")[1]
+                            const user = mode.split("-")[2]
 
-
+                            if (passwdMode == "c") {
+                                if (users.find(u => u.username === user).password === input) {
+                                    mode = "passwd-n-" + user;
+                                    shell.write('\r\nNew password: ');
+                                    input = '';
+                                    return;
+                                } else {
+                                    tries++;
+                                    if (tries > 2) {
+                                        shell.write('passwd: Authentication failure\r\n');
+                                        shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} `);
+                                        mode = "normal";
+                                        input = '';
+                                        return;
+                                    }
+                                    shell.write('\r\nWrong password\r\nPassword: ');
+                                    input = '';
+                                    return;
+                                }
+                            } else if (passwdMode == "n") {
+                                mode = "passwd-cc-" + user;
+                                input = '';
+                                passwordTemp = input;
+                                shell.write('\r\nConfirm password: ');
+                            } else if (passwdMode == "cc") {
+                                if (input === passwordTemp) {
+                                    users.find(u => u.username === user).password = input;
+                                    shell.write('\r\n');
+                                    shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} `);
+                                    mode = "normal";
+                                    input = '';
+                                } else {
+                                    shell.write('\r\npasswd: Authentication token manipulation error\r\npasswd: password unchanged\r\n');
+                                    shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} `);
+                                    mode = "normal";
+                                    input = '';
+                                    return;
+                                }
+                            }
                         } else {
                             handleCommand(input);
                             input = '';
@@ -854,7 +927,7 @@ Options:
                     } else if (data.toString() === '\u007F') {
                         if (input.length > 0) {
                             input = input.slice(0, -1);
-                            shell.write('\b \b');
+                            if (!mode.startsWith("passwd") && !mode.startsWith("supassword") && !mode.startsWith("sudo")) shell.write('\b \b');
                         }
                     } else input += data;
                 });

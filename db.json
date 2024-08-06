@@ -29,7 +29,7 @@
         "commands": {
           "ls": 1,
           "cd": 2,
-          "exit": 4,
+          "exit": 5,
           "su": 2
         },
         "files": 0,
@@ -52,14 +52,15 @@
           "ls": 41,
           "cat": 18,
           "cd": 79,
-          "help": 5,
+          "help": 6,
           "exit": 6,
           "touch": 1,
-          "su": 9,
+          "su": 10,
           "whoami": 2,
           "curl": 17,
           "neofetch": 9,
-          "usermod": 4
+          "usermod": 5,
+          "passwd": 3
         },
         "files": 1,
         "directories": 0,
