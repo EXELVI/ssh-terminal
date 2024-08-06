@@ -76,7 +76,6 @@ const fileSystemFunctions = {
     tree: function (path, indent = '') {
         let treeOutput = '';
         const target = navigateToPath(path, false, false);
-        console.log(path, target)
         if (target.type !== 'directory') {
             throw new Error('Path not found');
         }
@@ -104,7 +103,6 @@ const fileSystemFunctions = {
         if (sourceObj === false) {
             throw new Error('Source path not found');
         }
-        console.log("Surce", sourceObj)
         const destinationDir = navigateToPath(destination, true);
         if (destinationDir === false) {
             throw new Error('Destination path not found');
@@ -283,7 +281,7 @@ const server = new Server({
                     })
                 })
 
-                console.log(output)
+                
                 return output;
 
             }
@@ -353,7 +351,6 @@ const server = new Server({
                 }
                 try {
                     var target = fileSystemFunctions.readFileContent(`${fileName}`) || fileSystemFunctions.readFileContent(`${currentDir}/${fileName}`);
-                    console.log(target)
                     var content = "";
                     if (target === false || target === undefined || target.type === 'directory') {
                         return `cat: ${fileName}: No such file or directory\r\n`;
@@ -505,7 +502,6 @@ const server = new Server({
                     } else {
                         newDir = `${currentDir}/${directoryName}`.replace("//", "/");
                     }
-                    console.log(newDir, navigateToPath(newDir, false, false).type)
                     if (navigateToPath(newDir, false, false).type === 'directory') {
                         currentDir = newDir;
                         return '';
@@ -557,7 +553,6 @@ const server = new Server({
 
                 var dbuser = users.find(u => u.username === user);
                 if (!user) dbuser = users.find(user => user.uid === 0);
-                console.log(user, dbuser)
                 if (!dbuser) {
                     return `su: user '${user}' does not exist\r\n`;
                 }
@@ -883,7 +878,6 @@ Options:
                 var path = input.split(' ')[1] || "/";
                 try {
                     let result = fileSystemFunctions.tree(path);
-                    console.log(result)
                     result.split('\n').forEach((line, index) => {
                         shell.write(line + '\r\n');
                     });
@@ -994,6 +988,53 @@ Last login: ${userDB.stats.lastLogin.toLocaleString()}`;
 
                 return "";
 
+            }
+        },
+        {
+            name: "alias",
+            description: "Create an alias",
+            root: false,
+            execute: function (input, currentUser, shell) {
+                var parts = input.split(' ');
+
+                if (input.includes('--help') || input.includes('-h')) {
+                    return `Usage: alias [options] [alias] [command]`
+                }
+                var bashAliases = fileSystemFunctions.readFileContent(`${userDB.home}/.bash_aliases`) || "";
+                if (bashAliases) {
+                    bashAliases = bashAliases.split('\n');
+                    bashAliases.forEach((line, index) => {
+                        if (line.split('=')[0] === parts[1]) {
+                            return `alias: ${parts[1]}: alias already exists\r\n`;
+                        }
+                    })
+                }
+                if (parts.length < 3) {
+                    return `alias: missing operand\r\n`;
+                }
+                var alias = parts[1];
+                var command = "'" + parts.slice(2).join(' ') + "'";
+                fileSystemFunctions.createFile(userDB, `${userDB.home}/.bash_aliases`, `${alias}=${command}\n`);
+                return '';
+
+            }
+        },
+        {
+            name: "unalias",
+            description: "Remove an alias",
+            root: false,
+            execute: function (input, currentUser, shell) {
+                var alias = input.split(' ')[1];
+                if (!alias) {
+                    return `unalias: missing operand\r\n`;
+                }
+                var bashAliases = fileSystemFunctions.readFileContent(`${userDB.home}/.bash_aliases`) || "";
+                if (bashAliases) {
+                    bashAliases = bashAliases.split('\n');
+                    var newAliases = bashAliases.filter(line => line.split('=')[0] !== alias).join('\n');
+                    fileSystemFunctions.createFile(userDB, `${userDB.home}/.bash_aliases`, newAliases);
+                }
+                return '';
             }
         }
     ]
