@@ -99,7 +99,7 @@ const fileSystemFunctions = {
 
 function navigateToPath(path, parent = false, content = true) {
     const parts = path.split('/').filter(part => part.length > 0);
-    let current = fileSystem['/'] 
+    let current = fileSystem['/']
     if (!content && parts.length === 0) {
         return current;
     } else {
@@ -107,11 +107,11 @@ function navigateToPath(path, parent = false, content = true) {
     }
     for (let i = 0; i < (parent ? parts.length - 1 : parts.length); i++) {
         let c = current[parts[i]]
-       
+
         if (c === undefined) {
             return false;
         }
-        
+
         if (content && i === parts.length - 1) {
             current = c.content;
         } else if (!content && i === parts.length - 1) {
@@ -188,6 +188,8 @@ const server = new Server({
             lastLogin: new Date()
         }
     };
+
+    var tries = 0;
 
     var lastUser = 0;
 
@@ -438,7 +440,7 @@ const server = new Server({
                     } else {
                         newDir = `${currentDir}/${directoryName}`.replace("//", "/");
                     }
-                    console.log(newDir, navigateToPath(newDir, false, false).type )
+                    console.log(newDir, navigateToPath(newDir, false, false).type)
                     if (navigateToPath(newDir, false, false).type === 'directory') {
                         currentDir = newDir;
                         return '';
@@ -464,12 +466,58 @@ const server = new Server({
                 }
                 return '';
             }
+        },
+        {
+            name: "pwd",
+            root: false,
+            description: "Print the current working directory",
+            execute: function () {
+                return currentDir + '\r\n';
+            }
+        },
+        {
+            name: "whoami",
+            root: false,
+            description: "Display the current user",
+            execute: function (input, currentUser) {
+                return users.find(user => user.uid === currentUser).username + '\r\n';
+            }
+        },
+        {
+            name: "su",
+            description: "Change user",
+            root: false,
+            execute: function (input) {
+                var user = input.split(' ')[1];
+
+                var dbuser = users.find(user => user.username === user);
+                if (!user) dbuser = users.find(user => user.uid === 0);
+
+                if (!dbuser) {
+                    return `su: user '${user}' does not exist\r\n`;
+                }
+
+                if (dbuser.password != "") {
+                    userDB = dbuser;
+                    if (userDB.uid != 0) {
+                        lastUser = userDB.uid;
+                    }
+                    return '';
+                } else {
+                    mode = "supassword-" + dbuser.username;
+                    tries = 0
+                    shell.write('Password: ');
+                    return false;
+                }
+
+            }
         }
 
     ]
 
     client.on('authentication', (ctx) => {
         authCtx = ctx;
+        console.log(ctx)
         if (!ctx.username) return ctx.reject();
         if (ctx.username === 'rick') return ctx.accept();
         if (ctx.username === "clock") return ctx.accept();
@@ -593,10 +641,44 @@ const server = new Server({
 
 
                     if (data.toString() === '\r') {
-                        handleCommand(input);
-                        input = '';
+                        if (mode.startsWith("supassword-")) {
+                            const user = mode.split("-")[1]
+                            const dbuser = users.find(user => user.username === user);
+
+                            if (dbuser.password === input) {
+                                userDB = dbuser;
+                                if (userDB.uid != 0) {
+                                    lastUser = userDB.uid;
+                                }
+                                shell.write('\r\n');
+                                shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} `);
+                                mode = "normal";
+                                input = '';
+                            } else {
+                                tries++;
+                                if (tries > 2) {
+                                    shell.write('su: Authentication failure\r\n');
+                                    shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} `);
+                                    mode = "normal";
+                                    input = '';
+                                    return;
+                                }
+                                shell.write('\r\nWrong password\r\nPassword: ');
+                                input = '';
+                                return;
+
+                            }
+
+
+                        } else {
+                            handleCommand(input);
+                            input = '';
+                        }
+
                     } else if (data.toString() === '\u0003') {
+                        shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} `);
                         shell.write('^C');
+                        mode = "normal";
                         input = '';
                     } else if (data.toString() === '\u007F') {
                         if (input.length > 0) {

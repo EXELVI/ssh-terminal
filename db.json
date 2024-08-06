@@ -47,9 +47,9 @@
       ],
       "stats": {
         "commands": {
-          "ls": 40,
+          "ls": 41,
           "cat": 18,
-          "cd": 73,
+          "cd": 77,
           "help": 1,
           "exit": 1,
           "touch": 1
