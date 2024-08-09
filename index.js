@@ -197,6 +197,59 @@ if (hostKey) {
     fs.writeFileSync('host.key', key.private);
 }
 
+function startSnakeGame(stream) {
+    const width = 20;
+    const height = 10;
+
+    
+    const directions = {
+        'w': { x: 0, y: -1 },
+        'a': { x: -1, y: 0 },
+        's': { x: 0, y: 1 },
+        'd': { x: 1, y: 0 }
+    };
+
+    let snake = [{ x: Math.floor(width / 2), y: Math.floor(height / 2) }];
+    let food = {}
+    let currentDirection = 'd';
+    let gameOver = false;
+
+   
+
+    function drawBoard() {
+        let board = '';
+        for (let y = 0; y < height; y++) {
+            for (let x = 0; x < width; x++) {
+                if (snake.some(segment => segment.x === x && segment.y === y)) {
+                    board += chalk.green('S');
+                } else if (food.x === x && food.y === y) {
+                    board += chalk.red('O');
+                } else {
+                    board += ' ';
+                }
+            }
+            board += '\n';
+        }
+        stream.write('\x1Bc');
+        board.split('\n').forEach(line => stream.write(line + '\r\n'));
+    }
+
+
+    function gameLoop() {
+        if (gameOver) {
+            stream.write('\x1Bc');
+            stream.write('\x1B[31mGame over!\x1B[0m\n');
+            stream.end();
+            return;
+        }
+        drawBoard();
+        setTimeout(gameLoop, 200); 
+    }
+
+    gameLoop();
+}
+
+
 const server = new Server({
     hostKeys: [key.private]
 }, (client) => {
@@ -281,7 +334,7 @@ const server = new Server({
                     })
                 })
 
-                
+
                 return output;
 
             }
@@ -921,7 +974,7 @@ Options:
                     var g = Math.floor(Math.random() * 256);
                     var b = Math.floor(Math.random() * 256);
                     if (r + g + b < 60) return randomReadableColor();
-                    return [ r, g, b ]
+                    return [r, g, b]
                 }
                 let mostUsedCommand,
                     totalCommands
@@ -984,7 +1037,7 @@ Last login: ${userDB.stats.lastLogin.toLocaleString()}`;
                     const color = colorFade[i];
                     shell.write(chalk.rgb(color[0], color[1], color[2])(output.split('\n')[i]) + '\r\n');
                 }
-                
+
 
                 return "";
 
@@ -1047,6 +1100,7 @@ Last login: ${userDB.stats.lastLogin.toLocaleString()}`;
         if (!ctx.username) return ctx.reject();
         if (ctx.username === 'rick') return ctx.accept();
         if (ctx.username === "clock") return ctx.accept();
+        if (ctx.username === "snake") return ctx.accept();
         userDB = users.find(user => user.username === ctx.username);
         if (!userDB) {
             user = { username: ctx.username, password: "", home: "/home/" + ctx.username, uid: 1000 + users.length, groups: [ctx.username], stats: { commands: {}, files: 0, directories: 0, sudo: 0, uptime: 0, lastLogin: new Date() } }
@@ -1083,7 +1137,9 @@ Last login: ${userDB.stats.lastLogin.toLocaleString()}`;
 
                 var shell = accept();
 
-                if (authCtx.username === 'clock') {
+                if (authCtx.username == "snake") {
+                    startSnakeGame(shell);
+                } else if (authCtx.username === 'clock') {
 
                     const interval = setInterval(() => {
                         shell.write('\x1Bc');
@@ -1140,7 +1196,7 @@ Last login: ${userDB.stats.lastLogin.toLocaleString()}`;
                     }
 
                     return
-                } else if (authCtx.username != "exelv" && authCtx.username != "root" && authCtx.username != "exelvi") {
+                }  /*else if (authCtx.username != "exelv" && authCtx.username != "root" && authCtx.username != "exelvi") { //Random ips were trying to access the terminal
                     shell.write('\x1B[31m' + 'Hey! I see you are trying to access the terminal! Do you wanted something? \n\r');
                     shell.write('Hacker or not, leave a message (and if you want a reply some contact like email or discord)\x1B[0m\r\n');
                     shell.write('Message (Enter to send): ');
@@ -1173,365 +1229,365 @@ Last login: ${userDB.stats.lastLogin.toLocaleString()}`;
                     });
                     return
 
-                }
+                }*/
+                else {
 
 
-
-                var motd = ""
-                if (navigateToPath("/etc/motd")) {
-                    motd = fileSystemFunctions.readFileContent("/etc/motd");
-                }
-                motd.split('').forEach((char, index) => {
-                    setTimeout(() => {
-                        shell.write(char);
-                        if (index === motd.length - 1) {
-                            shell.write('\r\n');
-                            shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} `);
-                        }
-                    }, 5 * index);
-                })
-
-  
-
-                var input = '';
-                var passwordTemp = '';
-                shell.on('data', function (data) {
-
-                    console.log('Data:', data.toString());
-                    console.log(data);
-
-                    var printableChars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!@#$%^&*()_+-=[]{}|;:,.<>?/\\\'"`~ \t\n\r';
-                    if (!mode.startsWith("passwd") && !mode.startsWith("supassword") && !mode.startsWith("sudo")) {
-                        if (printableChars.includes(data.toString())) {
-                            shell.write(data);
-                        }
+                    var motd = ""
+                    if (navigateToPath("/etc/motd")) {
+                        motd = fileSystemFunctions.readFileContent("/etc/motd");
                     }
-
-                    if (data.toString() === '\r') {
-                        if (mode === "waiting") return;
-                        if (mode.startsWith("supassword-")) {
-                            let user = mode.split("-")[1]
-                            let dbuser = users.find(u => u.username === user);
-
-                            if (dbuser.password === input) {
-                                userDB = dbuser;
-                                if (userDB.uid != 0) {
-                                    lastUser = userDB.uid;
-                                }
-                                shell.write('\x1B[2K\r');
+                    motd.split('').forEach((char, index) => {
+                        setTimeout(() => {
+                            shell.write(char);
+                            if (index === motd.length - 1) {
+                                shell.write('\r\n');
                                 shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} `);
-                                mode = "normal";
-                                input = '';
-                            } else {
-                                tries++;
-                                if (tries > 2) {
-                                    shell.write('su: Authentication failure\r\n');
+                            }
+                        }, 5 * index);
+                    })
+
+
+
+                    var input = '';
+                    var passwordTemp = '';
+                    shell.on('data', function (data) {
+
+                        console.log('Data:', data.toString());
+                        console.log(data);
+
+                        var printableChars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!@#$%^&*()_+-=[]{}|;:,.<>?/\\\'"`~ \t\n\r';
+                        if (!mode.startsWith("passwd") && !mode.startsWith("supassword") && !mode.startsWith("sudo")) {
+                            if (printableChars.includes(data.toString())) {
+                                shell.write(data);
+                            }
+                        }
+
+                        if (data.toString() === '\r') {
+                            if (mode === "waiting") return;
+                            if (mode.startsWith("supassword-")) {
+                                let user = mode.split("-")[1]
+                                let dbuser = users.find(u => u.username === user);
+
+                                if (dbuser.password === input) {
+                                    userDB = dbuser;
+                                    if (userDB.uid != 0) {
+                                        lastUser = userDB.uid;
+                                    }
+                                    shell.write('\x1B[2K\r');
                                     shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} `);
                                     mode = "normal";
                                     input = '';
-                                    return;
-                                }
-                                shell.write('\x1B[2K\r');
-                                shell.write('Wrong password\r\nPassword: ');
-                                input = '';
-                                return;
-
-                            }
-                        } else if (mode.startsWith("passwd-")) {
-                            const passwdMode = mode.split("-")[1]
-                            const user = mode.split("-")[2]
-
-                            if (passwdMode == "c") {
-                                if (users.find(u => u.username === user).password === input) {
-                                    mode = "passwd-n-" + user;
-                                    shell.write('\x1B[2K\r');
-                                    shell.write('New password: ');
-                                    input = '';
-                                    return;
                                 } else {
                                     tries++;
                                     if (tries > 2) {
-                                        shell.write('passwd: Authentication failure\r\n');
+                                        shell.write('su: Authentication failure\r\n');
                                         shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} `);
                                         mode = "normal";
                                         input = '';
                                         return;
                                     }
                                     shell.write('\x1B[2K\r');
-                                    shell.write('Wrong password\r\nCurrent password: ');
-                                    input = '';
-                                    return;
-                                }
-                            } else if (passwdMode == "n") {
-                                mode = "passwd-cc-" + user;
-                                input = '';
-                                passwordTemp = input;
-                                shell.write('\x1B[2K\r');
-                                shell.write('Confirm password: ');
-                            } else if (passwdMode == "cc") {
-                                if (input === passwordTemp) {
-                                    users.find(u => u.username === user).password = input;
-                                    shell.write('\r\n');
-                                    shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} `);
-                                    mode = "normal";
-                                    input = '';
-                                } else {
-                                    shell.write('\r\npasswd: Authentication token manipulation error\r\npasswd: password unchanged\r\n');
-                                    shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} `);
-                                    mode = "normal";
-                                    input = '';
-                                    return;
-                                }
-                            }
-                        } else if (mode.startsWith("sudo-")) {
-                            let user = userDB.uid
-                            let inputC = mode.split("sudo-")[1]
-                            if (users.find(u => u.uid === user)?.password === input) {
-                                sudoLogin = true;
-                                mode = "normal";
-                                tries = 0;
-                                shell.write('\x1B[2K\r');
-                                handleCommand("sudo " + inputC, false);
-                            } else {
-                                tries++;
-                                if (tries > 2) {
-                                    shell.write('sudo: Authentication failure\r\n');
-                                    shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} `);
-                                    mode = "normal";
-                                    input = '';
-                                    tries = 0;
-                                    return;
-                                }
-                                shell.write('\x1B[2K\r');
-                                shell.write('Wrong password\r\nPassword: ');
-                                input = '';
-                                return;
-                            }
-
-                        } else if (mode.startsWith("adduser-")) {
-                            let mod = mode.split("-")[1];
-                            let user = mode.split("-")[2];
-
-                            if (mod == "passn") {
-                                mode = "adduser-passc-" + user;
-                                input = '';
-                                passwordTemp = input;
-                                shell.write('\x1B[2K\r');
-                                shell.write('Confirm password: ');
-
-                            } else if (mod == "passc") {
-                                if (input === passwordTemp) {
-                                    users.find(u => u.username === user).password = input;
-                                    shell.write('\r\n');
-                                    shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} `);
-                                    mode = "normal";
-                                    input = '';
-                                } else {
-                                    shell.write('\r\nSorry, passwords do not match\r\n');
-                                    shell.write('passwd: Authentication token manipulation error\r\npasswd: password unchanged\r\n');
-                                    shell.write(`Try again [y/n]: `);
-                                    mode = "confirm-adduser-passn-" + user;
+                                    shell.write('Wrong password\r\nPassword: ');
                                     input = '';
                                     return;
 
                                 }
-                            }
-                        } else if (mode.startsWith("confirm-")) {
-                            let functionString = mode.split("confirm-")[1];
+                            } else if (mode.startsWith("passwd-")) {
+                                const passwdMode = mode.split("-")[1]
+                                const user = mode.split("-")[2]
 
-                            if (input == "y") {
-                                shell.write('\r\n');
-                                shell.write(`New password: `);
-                                input = '';
-                                mode = functionString;
-                            } else {
-                                shell.write('\r\n');
-                                shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} `);
-                                mode = "normal";
-                                input = '';
-                            }
-                        } else {
-                            handleCommand(input);
-                            input = '';
-                        }
-
-
-                    } else if (data.toString() === '\u0003') {
-                        shell.write('^C');
-                        shell.write(`\r\n${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} `);
-
-                        mode = "normal";
-                        input = '';
-                    } else if (data.toString() === '\u007F') {
-                        if (input.length > 0) {
-                            input = input.slice(0, -1);
-                            if (!mode.startsWith("passwd") && !mode.startsWith("supassword") && !mode.startsWith("sudo")) shell.write('\b \b');
-                        }
-                    } else if (data.toString() === '\u0009') {
-                        if (mode == "normal") {
-                            if (first) {
-                                tabMachPosition = 0;
-                                tabMachCommandPosition = 0;
-                                first = false;
-
-                                hinput = input
-                                command = hinput.split(' ')[0];
-                                commandList = commands.map(function (command) {
-                                    return command.name;
-                                });
-                                matchingCommands = commandList.filter(function (commandName) {
-                                    return commandName.startsWith(command);
-                                });
-                            }
-
-                            fileListing = navigateToPath(currentDir);
-                            fileNames = Object.keys(fileListing);
-                            matchingFiles = fileNames.filter(function (fileName) {
-                                return fileName.startsWith(hinput.split(' ')[1] || '');
-                            });
-
-                            if (matchingCommands.length === 1) {
-                                if (matchingCommands[0] == command) {
-                                    const file = matchingFiles[tabMachPosition];
-                                    if (file) {
-                                        input = command + ' ' + file;
+                                if (passwdMode == "c") {
+                                    if (users.find(u => u.username === user).password === input) {
+                                        mode = "passwd-n-" + user;
                                         shell.write('\x1B[2K\r');
-                                        shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} ${input}`);
-                                        tabMachPosition++;
-                                        if (tabMachPosition >= matchingFiles.length) {
-                                            tabMachPosition = 0;
+                                        shell.write('New password: ');
+                                        input = '';
+                                        return;
+                                    } else {
+                                        tries++;
+                                        if (tries > 2) {
+                                            shell.write('passwd: Authentication failure\r\n');
+                                            shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} `);
+                                            mode = "normal";
+                                            input = '';
+                                            return;
                                         }
+                                        shell.write('\x1B[2K\r');
+                                        shell.write('Wrong password\r\nCurrent password: ');
+                                        input = '';
+                                        return;
                                     }
-                                } else {
-                                    input = matchingCommands[0];
+                                } else if (passwdMode == "n") {
+                                    mode = "passwd-cc-" + user;
+                                    input = '';
+                                    passwordTemp = input;
                                     shell.write('\x1B[2K\r');
-                                    shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} ${input}`);
+                                    shell.write('Confirm password: ');
+                                } else if (passwdMode == "cc") {
+                                    if (input === passwordTemp) {
+                                        users.find(u => u.username === user).password = input;
+                                        shell.write('\r\n');
+                                        shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} `);
+                                        mode = "normal";
+                                        input = '';
+                                    } else {
+                                        shell.write('\r\npasswd: Authentication token manipulation error\r\npasswd: password unchanged\r\n');
+                                        shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} `);
+                                        mode = "normal";
+                                        input = '';
+                                        return;
+                                    }
                                 }
-                            } else if (matchingCommands.length > 1) {
-                                input = matchingCommands[tabMachCommandPosition];
-                                shell.write('\x1B[2K\r');
-                                shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} ${input}`);
-                                tabMachCommandPosition++;
-                                if (tabMachCommandPosition >= matchingCommands.length) {
-                                    tabMachCommandPosition = 0;
+                            } else if (mode.startsWith("sudo-")) {
+                                let user = userDB.uid
+                                let inputC = mode.split("sudo-")[1]
+                                if (users.find(u => u.uid === user)?.password === input) {
+                                    sudoLogin = true;
+                                    mode = "normal";
+                                    tries = 0;
+                                    shell.write('\x1B[2K\r');
+                                    handleCommand("sudo " + inputC, false);
+                                } else {
+                                    tries++;
+                                    if (tries > 2) {
+                                        shell.write('sudo: Authentication failure\r\n');
+                                        shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} `);
+                                        mode = "normal";
+                                        input = '';
+                                        tries = 0;
+                                        return;
+                                    }
+                                    shell.write('\x1B[2K\r');
+                                    shell.write('Wrong password\r\nPassword: ');
+                                    input = '';
+                                    return;
                                 }
+
+                            } else if (mode.startsWith("adduser-")) {
+                                let mod = mode.split("-")[1];
+                                let user = mode.split("-")[2];
+
+                                if (mod == "passn") {
+                                    mode = "adduser-passc-" + user;
+                                    input = '';
+                                    passwordTemp = input;
+                                    shell.write('\x1B[2K\r');
+                                    shell.write('Confirm password: ');
+
+                                } else if (mod == "passc") {
+                                    if (input === passwordTemp) {
+                                        users.find(u => u.username === user).password = input;
+                                        shell.write('\r\n');
+                                        shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} `);
+                                        mode = "normal";
+                                        input = '';
+                                    } else {
+                                        shell.write('\r\nSorry, passwords do not match\r\n');
+                                        shell.write('passwd: Authentication token manipulation error\r\npasswd: password unchanged\r\n');
+                                        shell.write(`Try again [y/n]: `);
+                                        mode = "confirm-adduser-passn-" + user;
+                                        input = '';
+                                        return;
+
+                                    }
+                                }
+                            } else if (mode.startsWith("confirm-")) {
+                                let functionString = mode.split("confirm-")[1];
+
+                                if (input == "y") {
+                                    shell.write('\r\n');
+                                    shell.write(`New password: `);
+                                    input = '';
+                                    mode = functionString;
+                                } else {
+                                    shell.write('\r\n');
+                                    shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} `);
+                                    mode = "normal";
+                                    input = '';
+                                }
+                            } else {
+                                handleCommand(input);
+                                input = '';
                             }
 
-                        }
-                    } else if (data.toString() === '\u001b[A') {
-                        let bashHistory = fileSystemFunctions.getBashHistory(userDB).split('\n');
-                        if (hystoryPosition < bashHistory.length) {
-                            hystoryPosition++;
-                            input = bashHistory[bashHistory.length - hystoryPosition];
-                            shell.write('\x1B[2K\r');
-                            shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} ${input}`);
-                        }
-                    } else if (data.toString() === '\u001b[B') {
-                        let bashHistory = fileSystemFunctions.getBashHistory(userDB).split('\n');
-                        if (hystoryPosition > 1) {
-                            hystoryPosition--;
-                            input = bashHistory[bashHistory.length - hystoryPosition];
-                            shell.write('\x1B[2K\r');
-                            shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} ${input}`);
-                        }
-                    } else {
 
-                        input += data;
+                        } else if (data.toString() === '\u0003') {
+                            shell.write('^C');
+                            shell.write(`\r\n${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} `);
 
-                        tabMachPosition = 0;
-                        tabMachCommandPosition = 0;
-                        first = true;
-                    }
-                });
+                            mode = "normal";
+                            input = '';
+                        } else if (data.toString() === '\u007F') {
+                            if (input.length > 0) {
+                                input = input.slice(0, -1);
+                                if (!mode.startsWith("passwd") && !mode.startsWith("supassword") && !mode.startsWith("sudo")) shell.write('\b \b');
+                            }
+                        } else if (data.toString() === '\u0009') {
+                            if (mode == "normal") {
+                                if (first) {
+                                    tabMachPosition = 0;
+                                    tabMachCommandPosition = 0;
+                                    first = false;
 
-
-                function handleCommand(input, out = true) {
-                    let output = '';
-                    hystoryPosition = 1;
-                    try {
-                        fileSystemFunctions.addToBashHistory(userDB, input);
-                    } catch (error) {
-                        console.log(error)
-                    }
-                    output += `${userDB.uid == 0 ? '\r\n\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} ${input}\r\n`;
-
-                    if (out) {
-                        shell.write(output);
-                        output = '';
-                    }
-
-                    var currentUser = userDB.uid
-
-                    if (input.startsWith('sudo')) {
-                        if (currentUser === 0 || sudoLogin || users.find(user => user.username === 'root').password === "") {
-                            input = input.substring(5);
-                            currentUser = 0;
-                            userDB.stats.sudo++;
-                        } else {
-                            input = input.substring(5);
-                            tries = 0;
-                            shell.write('Password: ');
-                            mode = "sudo-" + input;
-                            return
-                        }
-                    }
-
-                    var command = commands.find(function (command) {
-                        return input.split(' ')[0] === command.name;
-                    });
-
-                    if (!command) {
-                        var alias = fileSystemFunctions.readFileContent(`${userDB.home}/.bash_aliases`);
-
-                        if (alias) {
-                            alias = alias.split('\n');
-                            alias.forEach(function (line) {
-                                if (line.split('=')[0] === input.split(' ')[0]) {
-                                    input = line.split('=')[1].slice(1, -1) + ' ' + input.split(' ').slice(1).join(' ');
-                                    command = commands.find(function (command) {
-                                        return input.split(' ')[0] === command.name;
+                                    hinput = input
+                                    command = hinput.split(' ')[0];
+                                    commandList = commands.map(function (command) {
+                                        return command.name;
+                                    });
+                                    matchingCommands = commandList.filter(function (commandName) {
+                                        return commandName.startsWith(command);
                                     });
                                 }
+
+                                fileListing = navigateToPath(currentDir);
+                                fileNames = Object.keys(fileListing);
+                                matchingFiles = fileNames.filter(function (fileName) {
+                                    return fileName.startsWith(hinput.split(' ')[1] || '');
+                                });
+
+                                if (matchingCommands.length === 1) {
+                                    if (matchingCommands[0] == command) {
+                                        const file = matchingFiles[tabMachPosition];
+                                        if (file) {
+                                            input = command + ' ' + file;
+                                            shell.write('\x1B[2K\r');
+                                            shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} ${input}`);
+                                            tabMachPosition++;
+                                            if (tabMachPosition >= matchingFiles.length) {
+                                                tabMachPosition = 0;
+                                            }
+                                        }
+                                    } else {
+                                        input = matchingCommands[0];
+                                        shell.write('\x1B[2K\r');
+                                        shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} ${input}`);
+                                    }
+                                } else if (matchingCommands.length > 1) {
+                                    input = matchingCommands[tabMachCommandPosition];
+                                    shell.write('\x1B[2K\r');
+                                    shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} ${input}`);
+                                    tabMachCommandPosition++;
+                                    if (tabMachCommandPosition >= matchingCommands.length) {
+                                        tabMachCommandPosition = 0;
+                                    }
+                                }
+
+                            }
+                        } else if (data.toString() === '\u001b[A') {
+                            let bashHistory = fileSystemFunctions.getBashHistory(userDB).split('\n');
+                            if (hystoryPosition < bashHistory.length) {
+                                hystoryPosition++;
+                                input = bashHistory[bashHistory.length - hystoryPosition];
+                                shell.write('\x1B[2K\r');
+                                shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} ${input}`);
+                            }
+                        } else if (data.toString() === '\u001b[B') {
+                            let bashHistory = fileSystemFunctions.getBashHistory(userDB).split('\n');
+                            if (hystoryPosition > 1) {
+                                hystoryPosition--;
+                                input = bashHistory[bashHistory.length - hystoryPosition];
+                                shell.write('\x1B[2K\r');
+                                shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} ${input}`);
+                            }
+                        } else {
+
+                            input += data;
+
+                            tabMachPosition = 0;
+                            tabMachCommandPosition = 0;
+                            first = true;
+                        }
+                    });
+
+
+                    function handleCommand(input, out = true) {
+                        let output = '';
+                        hystoryPosition = 1;
+                        try {
+                            fileSystemFunctions.addToBashHistory(userDB, input);
+                        } catch (error) {
+                            console.log(error)
+                        }
+                        output += `${userDB.uid == 0 ? '\r\n\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} ${input}\r\n`;
+
+                        if (out) {
+                            shell.write(output);
+                            output = '';
+                        }
+
+                        var currentUser = userDB.uid
+
+                        if (input.startsWith('sudo')) {
+                            if (currentUser === 0 || sudoLogin || users.find(user => user.username === 'root').password === "") {
+                                input = input.substring(5);
+                                currentUser = 0;
+                                userDB.stats.sudo++;
+                            } else {
+                                input = input.substring(5);
+                                tries = 0;
+                                shell.write('Password: ');
+                                mode = "sudo-" + input;
+                                return
+                            }
+                        }
+
+                        var command = commands.find(function (command) {
+                            return input.split(' ')[0] === command.name;
+                        });
+
+                        if (!command) {
+                            var alias = fileSystemFunctions.readFileContent(`${userDB.home}/.bash_aliases`);
+
+                            if (alias) {
+                                alias = alias.split('\n');
+                                alias.forEach(function (line) {
+                                    if (line.split('=')[0] === input.split(' ')[0]) {
+                                        input = line.split('=')[1].slice(1, -1) + ' ' + input.split(' ').slice(1).join(' ');
+                                        command = commands.find(function (command) {
+                                            return input.split(' ')[0] === command.name;
+                                        });
+                                    }
+                                });
+                            }
+
+                            command = commands.find(function (command) {
+                                return input.split(' ')[0] === command.name;
                             });
                         }
 
-                        command = commands.find(function (command) {
-                            return input.split(' ')[0] === command.name;
-                        });
-                    }
+                        if (command) {
+                            userDB.stats.commands[command.name] = userDB.stats.commands[command.name] ? userDB.stats.commands[command.name] + 1 : 1;
+                            var out = command.execute(input, currentUser, shell, handleCommand);
 
-                    if (command) {
-                        userDB.stats.commands[command.name] = userDB.stats.commands[command.name] ? userDB.stats.commands[command.name] + 1 : 1;
-                        var out = command.execute(input, currentUser, shell, handleCommand);
+                            if (out === false) return;
 
-                        if (out === false) return;
-
-                        var inputParts = input.split(' ');
-                        if (inputParts[inputParts.length - 2] === '>') {
-                            if (inputParts[inputParts.length - 1] === "") {
-                                if (out != "" && out != undefined) shell.write(out);
-                            } else {
-                                var fileName = inputParts[inputParts.length - 1];
-                                if (fileName.startsWith('/')) {
-                                    fileSystemFunctions.createFile(userDB, fileName, out);
+                            var inputParts = input.split(' ');
+                            if (inputParts[inputParts.length - 2] === '>') {
+                                if (inputParts[inputParts.length - 1] === "") {
+                                    if (out != "" && out != undefined) shell.write(out);
                                 } else {
-                                    fileSystemFunctions.createFile(userDB, `${currentDir}/${fileName}`, out);
+                                    var fileName = inputParts[inputParts.length - 1];
+                                    if (fileName.startsWith('/')) {
+                                        fileSystemFunctions.createFile(userDB, fileName, out);
+                                    } else {
+                                        fileSystemFunctions.createFile(userDB, `${currentDir}/${fileName}`, out);
+                                    }
                                 }
+
+                            } else {
+                                if (out != "" && out != undefined) shell.write(out);
                             }
-
                         } else {
-                            if (out != "" && out != undefined) shell.write(out);
+                            if (input !== "") {
+                                shell.write(`${input.split(' ')[0]}: command not found \r\n`);
+                            }
                         }
-                    } else {
-                        if (input !== "") {
-                            shell.write(`${input.split(' ')[0]}: command not found \r\n`);
-                        }
+
+
+                        shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} `);
                     }
-
-
-                    shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} `);
                 }
-
             });
 
             session.on("pty", (accept, reject, info) => {
