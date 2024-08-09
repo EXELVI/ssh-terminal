@@ -174,8 +174,6 @@ function parseCommand(command) {
 
 
 const db = require('./db');
-const { create } = require('domain');
-const { exec } = require('child_process');
 
 const key = generateKeyPairSync('rsa', {
     bits: 2048
@@ -195,6 +193,106 @@ if (hostKey) {
 } else {
     console.log('Host key not found, generating a new one');
     fs.writeFileSync('host.key', key.private);
+}
+
+
+
+
+function startConnectFourGame(stream) {
+    const rows = 6;
+    const columns = 7;
+    let selector = 0;
+    let board = Array.from({ length: rows }, () => Array(columns).fill(0));
+    let currentPlayer = 1;
+
+    function printBoard() {
+        stream.write('\x1Bc');
+        board.forEach(row => {
+            stream.write(row.map(cell => (cell === 0 ? '.' : cell === 1 ? 'X' : 'O')).join(' ') + '\r\n');
+        });
+
+        stream.write('0 1 2 3 4 5 6\r\n');
+
+        stream.write(' '.repeat(selector * 2) + '^\r\n');
+
+    }
+
+    function dropToken(col) {
+        for (let row = rows - 1; row >= 0; row--) {
+            if (board[row][col] === 0) {
+                board[row][col] = currentPlayer;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function checkWin(player) {
+        return checkVertical(player) || checkHorizontal(player) || checkDiagonal(player);
+    }
+
+    function checkVertical(player) {
+        for (let col = 0; col < columns; col++) {
+            let count = 0;
+            for (let row = 0; row < rows; row++) {
+                count = board[row][col] === player ? count + 1 : 0;
+                if (count >= 4) return true;
+            }
+        }
+        return false;
+    }
+
+    function checkHorizontal(player) {
+        for (let row = 0; row < rows; row++) {
+            let count = 0;
+            for (let col = 0; col < columns; col++) {
+                count = board[row][col] === player ? count + 1 : 0;
+                if (count >= 4) return true;
+            }
+        }
+        return false;
+    }
+
+    function checkDiagonal(player) {
+        for (let row = 0; row < rows - 3; row++) {
+            for (let col = 0; col < columns; col++) {
+                if (col <= columns - 4) {
+                    if (board[row][col] === player && board[row + 1][col + 1] === player &&
+                        board[row + 2][col + 2] === player && board[row + 3][col + 3] === player) {
+                        return true;
+                    }
+                }
+                if (col >= 3) {
+                    if (board[row][col] === player && board[row + 1][col - 1] === player &&
+                        board[row + 2][col - 2] === player && board[row + 3][col - 3] === player) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    function checkTie() {
+        return board.every(row => row.every(cell => cell !== 0));
+    }
+
+
+    function getNextOpenRow(col) {
+        for (let row = rows - 1; row >= 0; row--) {
+            if (board[row][col] === 0) {
+                return row;
+            }
+        }
+        return null;
+    }
+
+    function currentPlayerWins(player) {
+        return checkWin(player);
+    }
+
+    printBoard();
+
 }
 
 function startSnakeGame(stream) {
@@ -231,7 +329,7 @@ function startSnakeGame(stream) {
         let gameOverMessage = 'Game over     ';
         gameOverMessage = gameOverMessage.split('')
         for (let y = 0; y < height; y++) {
-            for (let x = 0; x < width; x++) { 
+            for (let x = 0; x < width; x++) {
                 if (gameOver && y === Math.floor(height / 2) && x >= Math.floor(width / 2) - Math.floor(gameOverMessage.length / 2) && x < Math.floor(width / 2) + Math.floor(gameOverMessage.length / 2)) {
                     board += snake.some(segment => segment.x === x && segment.y === y) ? chalk.bgGreen(chalk.red(gameOverMessage.shift() + ' ')) : (food.x === x && food.y === y ? chalk.bgRed(gameOverMessage.shift() + ' ') : chalk.bgRgb(20, 20, 20)(chalk.red(gameOverMessage.shift() + ' ')));
                 } else if (snake.some(segment => segment.x === x && segment.y === y)) {
@@ -1189,6 +1287,7 @@ Last login: ${userDB.stats.lastLogin.toLocaleString()}`;
         if (!ctx.username) return ctx.reject();
         if (ctx.username === 'rick') return ctx.accept();
         if (ctx.username === "clock") return ctx.accept();
+        if (ctx.username === "connect4") return ctx.accept();
         userDB = users.find(user => user.username === ctx.username);
         if (!userDB) {
             user = { username: ctx.username, password: "", home: "/home/" + ctx.username, uid: 1000 + users.length, groups: [ctx.username], stats: { commands: {}, files: 0, directories: 0, sudo: 0, uptime: 0, lastLogin: new Date() } }
@@ -1224,8 +1323,9 @@ Last login: ${userDB.stats.lastLogin.toLocaleString()}`;
             session.on("shell", (accept, reject) => {
 
                 var shell = accept();
-
-                if (authCtx.username == "snake") {
+                if (authCtx.username === 'connect4') {
+                    startConnectFourGame(shell);
+                } else if (authCtx.username == "snake") {
                     startSnakeGame(shell);
                 } else if (authCtx.username === 'clock') {
 
