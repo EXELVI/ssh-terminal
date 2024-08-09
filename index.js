@@ -201,6 +201,7 @@ function startSnakeGame(stream) {
     const width = 20;
     const height = 10;
 
+    let directionsQueue = [];
     
     const directions = {
         'w': { x: 0, y: -1 },
@@ -210,18 +211,27 @@ function startSnakeGame(stream) {
     };
 
     let snake = [{ x: Math.floor(width / 2), y: Math.floor(height / 2) }];
-    let food = {}
+    let food = spawnFood();
     let currentDirection = 'd';
     let gameOver = false;
 
-   
+    function spawnFood() {
+        let foodPosition;
+        do {
+            foodPosition = {
+                x: Math.floor(Math.random() * width),
+                y: Math.floor(Math.random() * height)
+            };
+        } while (snake.some(segment => segment.x === foodPosition.x && segment.y === foodPosition.y));
+        return foodPosition;
+    }
 
     function drawBoard() {
         let board = '';
         for (let y = 0; y < height; y++) {
             for (let x = 0; x < width; x++) {
                 if (snake.some(segment => segment.x === x && segment.y === y)) {
-                    board += chalk.green('S');
+                    board += chalk.green('*');
                 } else if (food.x === x && food.y === y) {
                     board += chalk.red('O');
                 } else {
@@ -234,6 +244,58 @@ function startSnakeGame(stream) {
         board.split('\n').forEach(line => stream.write(line + '\r\n'));
     }
 
+    function updateSnake() {
+        const newHead = {
+            x: snake[0].x + directions[currentDirection].x,
+            y: snake[0].y + directions[currentDirection].y
+        };
+
+        if (
+            newHead.x < 0 || newHead.x >= width ||
+            newHead.y < 0 || newHead.y >= height ||
+            snake.some(segment => segment.x === newHead.x && segment.y === newHead.y)
+        ) {
+            gameOver = true;
+            return;
+        }
+
+        snake.unshift(newHead);
+
+        if (newHead.x === food.x && newHead.y === food.y) {
+            food = spawnFood();
+        } else {
+            snake.pop();
+        }
+    }
+
+   stream.on('data', (data) => {
+        const input = data.toString()
+
+        if (input === '\x03') {
+            gameOver = true;
+            return;
+        }
+
+        switch (input) {
+            case 'w':
+            case '\x1B[A':
+                directionsQueue.push('w');
+                break;
+            case 'a':
+            case '\x1B[D':
+                directionsQueue.push('a');
+                break;
+            case 's':
+            case '\x1B[B':
+                directionsQueue.push('s');
+                break;
+            case 'd':
+            case '\x1B[C':
+                directionsQueue.push('d');
+                break;
+        }
+       
+    });
 
     function gameLoop() {
         if (gameOver) {
@@ -242,7 +304,15 @@ function startSnakeGame(stream) {
             stream.end();
             return;
         }
+        directionsQueue = directionsQueue.filter(direction => {
+            if (directions[direction].x + directions[currentDirection].x !== 0 || directions[direction].y + directions[currentDirection].y !== 0) {
+                currentDirection = direction;
+                return false;
+            }
+            return true;
+        });
         drawBoard();
+        updateSnake();
         setTimeout(gameLoop, 200); 
     }
 

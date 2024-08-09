@@ -216,6 +216,23 @@
         "uptime": 190,
         "lastLogin": "2024-08-06T21:20:47.629Z"
       }
+    },
+    {
+      "username": "snake",
+      "password": "",
+      "home": "/home/snake",
+      "uid": 1011,
+      "groups": [
+        "snake"
+      ],
+      "stats": {
+        "commands": {},
+        "files": 0,
+        "directories": 0,
+        "sudo": 0,
+        "uptime": 63758,
+        "lastLogin": "2024-08-09T11:09:08.040Z"
+      }
     }
   ],
   "fileSystem": {
@@ -886,6 +903,49 @@
               }
             },
             "postgres": {
+              "type": "directory",
+              "owner": 0,
+              "lastModified": "2024-01-01T00:00:00.000Z",
+              "created": "2024-01-01T00:00:00.000Z",
+              "content": {
+                ".bash_history": {
+                  "type": "file",
+                  "owner": 0,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": ""
+                },
+                ".bashrc": {
+                  "type": "file",
+                  "owner": 0,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": ""
+                },
+                ".bash_aliases": {
+                  "type": "file",
+                  "owner": 0,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": ""
+                },
+                "desktop": {
+                  "type": "directory",
+                  "owner": 0,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": {}
+                },
+                "documents": {
+                  "type": "directory",
+                  "owner": 0,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": {}
+                }
+              }
+            },
+            "snake": {
               "type": "directory",
               "owner": 0,
               "lastModified": "2024-01-01T00:00:00.000Z",
