@@ -208,7 +208,20 @@ function start2048Game(stream) {
       return grid;
     }
     
-
+    function addRandomTile() {
+        let emptyCells = [];
+        for (let r = 0; r < gridSize; r++) {
+            for (let c = 0; c < gridSize; c++) {
+            if (grid[r][c] === 0) {
+                emptyCells.push({ r, c });
+            }
+            }
+        }
+        if (emptyCells.length > 0) {
+            let { r, c } = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+            grid[r][c] = Math.random() < 0.9 ? 2 : 4;
+        }
+    }
     
     function printGrid() {
         stream.write('\x1Bc');
@@ -218,11 +231,26 @@ function start2048Game(stream) {
       }
     }
     
-
+    function combineRowLeft(row) {
+        let newRow = row.filter(val => val !== 0);
+        for (let i = 0; i < newRow.length - 1; i++) {
+            if (newRow[i] === newRow[i + 1]) {
+            newRow[i] *= 2;
+            score += newRow[i];
+            newRow[i + 1] = 0;
+            }
+        }
+        newRow = newRow.filter(val => val !== 0);
+        while (newRow.length < gridSize) {
+            newRow.push(0);
+        }
+        return newRow
+    }
+    
     function moveLeft() {
       let changed = false;
       for (let r = 0; r < gridSize; r++) {
-        let newRow = [];
+        let newRow = combineRowLeft(grid[r]);
         if (grid[r].toString() !== newRow.toString()) {
           changed = true;
         }
@@ -265,7 +293,22 @@ function start2048Game(stream) {
       rotateGrid();
     }
     
-   
+    function isGameOver() {
+        for (let r = 0; r < gridSize; r++) {
+            for (let c = 0; c < gridSize; c++) {
+            if (grid[r][c] === 0) {
+                return false;
+            }
+            if (c !== gridSize - 1 && grid[r][c] === grid[r][c + 1]) {
+                return false;
+            }
+            if (r !== gridSize - 1 && grid[r][c] === grid[r + 1][c]) {
+                return false;
+            }
+            }
+        }
+        return true;
+    }
 
     stream.on('data', (data) => {
         const input = data.toString()
@@ -282,9 +325,17 @@ function start2048Game(stream) {
             moveRight();
         }
 
+        if (isGameOver()) {
+            printGrid();
+            stream.write('Game over!\r\n');
+            stream.end();
+          } else {
+            printGrid();
+          }
         });    
     
-      
+      addRandomTile();
+      addRandomTile();
       printGrid();
     
 }
