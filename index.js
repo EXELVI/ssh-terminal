@@ -202,7 +202,7 @@ function startSnakeGame(stream) {
     const height = 10;
 
     let directionsQueue = [];
-    
+
     const directions = {
         'w': { x: 0, y: -1 },
         'a': { x: -1, y: 0 },
@@ -226,21 +226,35 @@ function startSnakeGame(stream) {
         return foodPosition;
     }
 
-    function drawBoard() {
+    function drawBoard(gameOver = false) {
         let board = '';
+        let gameOverMessage = 'Game over     ';
+        gameOverMessage = gameOverMessage.split('')
         for (let y = 0; y < height; y++) {
-            for (let x = 0; x < width; x++) {
-                if (snake.some(segment => segment.x === x && segment.y === y)) {
-                    board += chalk.green('*');
+            for (let x = 0; x < width; x++) { 
+                if (gameOver && y === Math.floor(height / 2) && x >= Math.floor(width / 2) - Math.floor(gameOverMessage.length / 2) && x < Math.floor(width / 2) + Math.floor(gameOverMessage.length / 2)) {
+                    board += snake.some(segment => segment.x === x && segment.y === y) ? chalk.bgGreen(chalk.red(gameOverMessage.shift() + ' ')) : (food.x === x && food.y === y ? chalk.bgRed(gameOverMessage.shift() + ' ') : chalk.bgRgb(20, 20, 20)(chalk.red(gameOverMessage.shift() + ' ')));
+                } else if (snake.some(segment => segment.x === x && segment.y === y)) {
+                    board += chalk.bgGreen('  ');
                 } else if (food.x === x && food.y === y) {
-                    board += chalk.red('O');
+                    board += chalk.bgRed('  ');
                 } else {
-                    board += ' ';
+                    board += y % 2 === 0 ? x % 2 === 0 ?
+                        (gameOver ? chalk.bgRgb(20, 20, 20)("  ") : chalk.bgRgb(30, 30, 30)("  ")) :
+                        (gameOver ? chalk.bgRgb(20, 20, 20)("  ") : chalk.bgRgb(40, 40, 40)("  ")) :
+                        x % 2 === 0 ?
+                            (gameOver ? chalk.bgRgb(20, 20, 20)("  ") :
+                                chalk.bgRgb(40, 40, 40)("  ")) :
+                            (gameOver ? chalk.bgRgb(20, 20, 20)("  ") :
+                                chalk.bgRgb(30, 30, 30)("  "));
                 }
+
             }
             board += '\n';
         }
         stream.write('\x1Bc');
+        stream.write(`Score: ${snake.length - 1} - Best: ${users.find(user => user.username === 'snake')?.stats?.best || 0}\r\n`);
+
         board.split('\n').forEach(line => stream.write(line + '\r\n'));
     }
 
@@ -268,7 +282,7 @@ function startSnakeGame(stream) {
         }
     }
 
-   stream.on('data', (data) => {
+    stream.on('data', (data) => {
         const input = data.toString()
 
         if (input === '\x03') {
@@ -294,12 +308,17 @@ function startSnakeGame(stream) {
                 directionsQueue.push('d');
                 break;
         }
-       
+
     });
 
     function gameLoop() {
         if (gameOver) {
             stream.write('\x1Bc');
+            var best = users.find(u => u.username === 'snake')?.stats?.best || 0;
+            if (snake.length > best) {
+                users.find(u => u.username === 'snake').stats = { best: snake.length }
+            }
+            drawBoard(true)
             stream.write('\x1B[31mGame over!\x1B[0m\n');
             stream.end();
             return;
@@ -313,7 +332,7 @@ function startSnakeGame(stream) {
         });
         drawBoard();
         updateSnake();
-        setTimeout(gameLoop, 200); 
+        setTimeout(gameLoop, 200);
     }
 
     gameLoop();
@@ -1170,7 +1189,6 @@ Last login: ${userDB.stats.lastLogin.toLocaleString()}`;
         if (!ctx.username) return ctx.reject();
         if (ctx.username === 'rick') return ctx.accept();
         if (ctx.username === "clock") return ctx.accept();
-        if (ctx.username === "snake") return ctx.accept();
         userDB = users.find(user => user.username === ctx.username);
         if (!userDB) {
             user = { username: ctx.username, password: "", home: "/home/" + ctx.username, uid: 1000 + users.length, groups: [ctx.username], stats: { commands: {}, files: 0, directories: 0, sudo: 0, uptime: 0, lastLogin: new Date() } }

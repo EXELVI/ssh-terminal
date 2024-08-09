@@ -226,12 +226,8 @@
         "snake"
       ],
       "stats": {
-        "commands": {},
-        "files": 0,
-        "directories": 0,
-        "sudo": 0,
-        "uptime": 63758,
-        "lastLogin": "2024-08-09T11:09:08.040Z"
+        "best": 30,
+        "uptime": 3576
       }
     }
   ],
