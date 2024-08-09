@@ -194,6 +194,100 @@ if (hostKey) {
 }
 
 
+function start2048Game(stream) {
+    
+    const gridSize = 4;
+    let grid = createGrid(gridSize);
+    let score = 0;
+    
+    function createGrid(size) {
+      let grid = [];
+      for (let i = 0; i < size; i++) {
+        grid.push(new Array(size).fill(0));
+      }
+      return grid;
+    }
+    
+
+    
+    function printGrid() {
+        stream.write('\x1Bc');
+      stream.write(`Score: ${score}` + '\r\n');
+      for (let r = 0; r < gridSize; r++) {
+        stream.write(grid[r].map(val => (val === 0 ? '.' : val)).join(' ') + '\r\n');
+      }
+    }
+    
+
+    function moveLeft() {
+      let changed = false;
+      for (let r = 0; r < gridSize; r++) {
+        let newRow = [];
+        if (grid[r].toString() !== newRow.toString()) {
+          changed = true;
+        }
+        grid[r] = newRow;
+      }
+      if (changed) addRandomTile();
+    }
+    
+    function rotateGrid() {
+      let newGrid = createGrid(gridSize);
+      for (let r = 0; r < gridSize; r++) {
+        for (let c = 0; c < gridSize; c++) {
+          newGrid[c][gridSize - 1 - r] = grid[r][c];
+        }
+      }
+      grid = newGrid;
+    }
+    
+    function moveRight() {
+      rotateGrid();
+      rotateGrid();
+      moveLeft();
+      rotateGrid();
+      rotateGrid();
+    }
+    
+    function moveUp() {
+      rotateGrid();
+      rotateGrid();
+      rotateGrid();
+      moveLeft();
+      rotateGrid();
+    }
+    
+    function moveDown() {
+      rotateGrid();
+      moveLeft();
+      rotateGrid();
+      rotateGrid();
+      rotateGrid();
+    }
+    
+   
+
+    stream.on('data', (data) => {
+        const input = data.toString()
+        
+        if (input === '\x03') {
+            stream.end();
+        } else if (input === 'w' || input === '\x1B[A') {
+            moveUp();
+        } else if (input === 'a' || input === '\x1B[D') {
+            moveLeft();
+        } else if (input === 's' || input === '\x1B[B') {
+            moveDown();
+        } else if (input === 'd' || input === '\x1B[C') {
+            moveRight();
+        }
+
+        });    
+    
+      
+      printGrid();
+    
+}
 
 
 function startConnectFourGame(stream) {
@@ -358,14 +452,12 @@ function startConnectFourGame(stream) {
                 if (tBoard[row][col] === 0) {
                     tBoard[row][col] = 3 - currentPlayer
 
-                    console.log(tBoard[row][col])
                     break;
                 }
             }
 
             var [nextMove, _] = minimax(tBoard, 4, -Infinity, Infinity, true);
 
-            console.log(nextMove)
             printBoard([], nextMove);
 
         }
@@ -1537,6 +1629,7 @@ Last login: ${userDB.stats.lastLogin.toLocaleString()}`;
         if (ctx.username === 'rick') return ctx.accept();
         if (ctx.username === "clock") return ctx.accept();
         if (ctx.username === "connect4") return ctx.accept();
+        if (ctx.username === "2048") return ctx.accept();
         userDB = users.find(user => user.username === ctx.username);
         if (!userDB) {
             user = { username: ctx.username, password: "", home: "/home/" + ctx.username, uid: 1000 + users.length, groups: [ctx.username], stats: { commands: {}, files: 0, directories: 0, sudo: 0, uptime: 0, lastLogin: new Date() } }
@@ -1572,7 +1665,9 @@ Last login: ${userDB.stats.lastLogin.toLocaleString()}`;
             session.on("shell", (accept, reject) => {
 
                 var shell = accept();
-                if (authCtx.username === 'connect4') {
+                if (authCtx.username === '2048') {
+                    start2048Game(shell);
+                } else if (authCtx.username === 'connect4') {
                     startConnectFourGame(shell);
                 } else if (authCtx.username == "snake") {
                     startSnakeGame(shell);
