@@ -209,18 +209,19 @@ function start2048Game(stream) {
     }
     
     function addRandomTile() {
-        let emptyCells = [];
-        for (let r = 0; r < gridSize; r++) {
-            for (let c = 0; c < gridSize; c++) {
-            if (grid[r][c] === 0) {
-                emptyCells.push({ r, c });
-            }
-            }
+      let emptyTiles = [];
+      for (let r = 0; r < gridSize; r++) {
+        for (let c = 0; c < gridSize; c++) {
+          if (grid[r][c] === 0) {
+            emptyTiles.push([r, c]);
+          }
         }
-        if (emptyCells.length > 0) {
-            let { r, c } = emptyCells[Math.floor(Math.random() * emptyCells.length)];
-            grid[r][c] = Math.random() < 0.9 ? 2 : 4;
-        }
+      }
+      
+      if (emptyTiles.length > 0) {
+        let [row, col] = emptyTiles[Math.floor(Math.random() * emptyTiles.length)];
+        grid[row][col] = Math.random() < 0.9 ? 2 : 4;
+      }
     }
     
     function printGrid() {
@@ -232,19 +233,15 @@ function start2048Game(stream) {
     }
     
     function combineRowLeft(row) {
-        let newRow = row.filter(val => val !== 0);
-        for (let i = 0; i < newRow.length - 1; i++) {
-            if (newRow[i] === newRow[i + 1]) {
-            newRow[i] *= 2;
-            score += newRow[i];
-            newRow[i + 1] = 0;
-            }
+      let newRow = row.filter(val => val !== 0);
+      for (let i = 0; i < newRow.length - 1; i++) {
+        if (newRow[i] === newRow[i + 1]) {
+          newRow[i] *= 2;
+          score += newRow[i];
+          newRow[i + 1] = 0;
         }
-        newRow = newRow.filter(val => val !== 0);
-        while (newRow.length < gridSize) {
-            newRow.push(0);
-        }
-        return newRow
+      }
+      return newRow.filter(val => val !== 0).concat(new Array(gridSize).fill(0)).slice(0, gridSize);
     }
     
     function moveLeft() {
@@ -294,20 +291,14 @@ function start2048Game(stream) {
     }
     
     function isGameOver() {
-        for (let r = 0; r < gridSize; r++) {
-            for (let c = 0; c < gridSize; c++) {
-            if (grid[r][c] === 0) {
-                return false;
-            }
-            if (c !== gridSize - 1 && grid[r][c] === grid[r][c + 1]) {
-                return false;
-            }
-            if (r !== gridSize - 1 && grid[r][c] === grid[r + 1][c]) {
-                return false;
-            }
-            }
+      for (let r = 0; r < gridSize; r++) {
+        for (let c = 0; c < gridSize; c++) {
+          if (grid[r][c] === 0) return false;
+          if (c < gridSize - 1 && grid[r][c] === grid[r][c + 1]) return false;
+          if (r < gridSize - 1 && grid[r][c] === grid[r + 1][c]) return false;
         }
-        return true;
+      }
+      return true;
     }
 
     stream.on('data', (data) => {
@@ -327,8 +318,8 @@ function start2048Game(stream) {
 
         if (isGameOver()) {
             printGrid();
-            stream.write('Game over!\r\n');
-            stream.end();
+            console.log('Game Over!');
+            rl.close();
           } else {
             printGrid();
           }
