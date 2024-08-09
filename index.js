@@ -1,6 +1,4 @@
-const { timingSafeEqual } = require('crypto');
 const fs = require('fs');
-const { inspect } = require('util');
 const { utils: { generateKeyPairSync } } = require('ssh2');
 const { utils: { parseKey }, Server } = require('ssh2');
 const ssh2 = require('ssh2')
@@ -205,19 +203,31 @@ function startConnectFourGame(stream) {
     let board = Array.from({ length: rows }, () => Array(columns).fill(0));
     let currentPlayer = 1;
 
-    function printBoard() {
+    function printBoard(winningTokens = [], aiNextMove = null) {
         stream.write('\x1Bc');
-        board.forEach(row => {
-            stream.write(row.map(cell => 
-                (cell === 0 ? '.' : cell === 1 ? chalk.red('O') : chalk.blue('O'))
-            ).join(' ') + '\r\n');
+        board.forEach((row, rowIndex) => {
+            stream.write(row.map((cell, colIndex) => {
+                const isWinningToken = winningTokens.some(([r, c]) => r === rowIndex && c === colIndex);
+                const isAiNextMove = aiNextMove === colIndex && rowIndex === getNextOpenRow(colIndex);
+                console.log(aiNextMove)
+                if (cell === 0) {
+                    return colIndex === selector ? chalk.bgRgb(30, 30, 30)(isAiNextMove ? chalk.yellow('?') : '.') : isAiNextMove ? chalk.yellow('?') : '.';
+                } else if (cell === 1) {
+                    return isWinningToken ? chalk.bgRed.white('O') : 
+                    colIndex === selector ? 
+                    chalk.bgRgb(20, 20, 20).red('O') : chalk.red('O');
+                } else {
+                    return isWinningToken ? chalk.bgBlue.white('O') : 
+                    colIndex === selector ? 
+                    chalk.bgRgb(20, 20, 20).blue('O') : chalk.blue('O');
+                }
+            }).join(' ') + '\r\n');
         });
 
         stream.write('0 1 2 3 4 5 6\r\n');
-
         stream.write(' '.repeat(selector * 2) + '^\r\n');
-
     }
+
 
     function dropToken(col) {
         for (let row = rows - 1; row >= 0; row--) {
@@ -233,47 +243,73 @@ function startConnectFourGame(stream) {
         return checkVertical(player) || checkHorizontal(player) || checkDiagonal(player);
     }
 
+
+
     function checkVertical(player) {
         for (let col = 0; col < columns; col++) {
             let count = 0;
+            let winningTokens = [];
             for (let row = 0; row < rows; row++) {
-                count = board[row][col] === player ? count + 1 : 0;
-                if (count >= 4) return true;
+                if (board[row][col] === player) {
+                    count++;
+                    winningTokens.push([row, col]);
+                    if (count >= 4) {
+                        return winningTokens;
+                    }
+                } else {
+                    count = 0;
+                    winningTokens = [];
+                }
             }
         }
-        return false;
+        return null;
     }
 
     function checkHorizontal(player) {
         for (let row = 0; row < rows; row++) {
             let count = 0;
+            let winningTokens = [];
             for (let col = 0; col < columns; col++) {
-                count = board[row][col] === player ? count + 1 : 0;
-                if (count >= 4) return true;
+                if (board[row][col] === player) {
+                    count++;
+                    winningTokens.push([row, col]);
+                    if (count >= 4) {
+                        return winningTokens;
+                    }
+                } else {
+                    count = 0;
+                    winningTokens = [];
+                }
             }
         }
-        return false;
+        return null;
     }
+
+
 
     function checkDiagonal(player) {
         for (let row = 0; row < rows - 3; row++) {
             for (let col = 0; col < columns; col++) {
+                let winningTokens = [];
                 if (col <= columns - 4) {
                     if (board[row][col] === player && board[row + 1][col + 1] === player &&
                         board[row + 2][col + 2] === player && board[row + 3][col + 3] === player) {
-                        return true;
+                        winningTokens.push([row, col], [row + 1, col + 1], [row + 2, col + 2], [row + 3, col + 3]);
+                        return winningTokens;
                     }
                 }
                 if (col >= 3) {
                     if (board[row][col] === player && board[row + 1][col - 1] === player &&
                         board[row + 2][col - 2] === player && board[row + 3][col - 3] === player) {
-                        return true;
+                        winningTokens.push([row, col], [row + 1, col - 1], [row + 2, col - 2], [row + 3, col - 3]);
+                        return winningTokens;
                     }
                 }
             }
         }
-        return false;
+        return null;
     }
+
 
     function checkTie() {
         return board.every(row => row.every(cell => cell !== 0));
@@ -291,15 +327,15 @@ function startConnectFourGame(stream) {
         const input = data.toString();
         if (input === '\x03') {
             stream.end();
-        }
-        if (input === 'a' || input === '\x1B[D') {
+        } else if (input === 'a' || input === '\x1B[D') {
             selector = Math.max(selector - 1, 0);
         } else if (input === 'd' || input === '\x1B[C') {
             selector = Math.min(selector + 1, columns - 1);
         } else if (input === ' ' || input === '\r') {
             if (dropToken(selector)) {
-                if (checkWin(currentPlayer)) {
-                    printBoard();
+                const winningTokens = checkWin(currentPlayer);
+                if (winningTokens) {
+                    printBoard(winningTokens);
                     stream.write(chalk.green(`Player ${currentPlayer} wins!\r\n`));
                     stream.end();
                 } else if (checkTie()) {
@@ -311,9 +347,40 @@ function startConnectFourGame(stream) {
                     aiMove();
                 }
             }
+        } else if (input === 'm') {
+            hintForPlayer();
+        } else if (input === 'h') {
+
+            var tBoard = JSON.parse(JSON.stringify(board));
+            var col = selector
+
+            for (let row = rows - 1; row >= 0; row--) {
+                if (tBoard[row][col] === 0) {
+                    tBoard[row][col] = 3 - currentPlayer
+
+                    console.log(tBoard[row][col])
+                    break;
+                }
+            }
+
+            var [nextMove, _] = minimax(tBoard, 4, -Infinity, Infinity, true);
+
+            console.log(nextMove)
+            printBoard([], nextMove);
+
         }
         printBoard();
-    })
+    });
+
+    function hintForPlayer() {
+        const depth = 4;
+        const [suggestedColumn, _] = minimax(board, depth, -Infinity, Infinity, true);
+        if (suggestedColumn !== null) {
+            selector = suggestedColumn; 
+        }
+    }
+
+
 
     function minimax(board, depth, alpha, beta, maximizingPlayer) {
         const validColumns = getValidColumns();
@@ -444,8 +511,9 @@ function startConnectFourGame(stream) {
         const [col, _] = minimax(board, depth, -Infinity, Infinity, true);
         if (col !== null) {
             dropToken(col);
-            if (checkWin(currentPlayer)) {
-                printBoard();
+            const winningTokens = checkWin(currentPlayer);
+            if (winningTokens) {
+                printBoard(winningTokens);
                 stream.write(chalk.blue(`AI wins!\r\n`));
                 stream.end();
             } else if (checkTie()) {
