@@ -277,6 +277,128 @@ function startConnectFourGame(stream) {
         return board.every(row => row.every(cell => cell !== 0));
     }
 
+    function getValidColumns() {
+        const validColumns = [];
+        for (let col = 0; col < columns; col++) {
+            if (board[0][col] === 0) validColumns.push(col);
+        }
+        return validColumns;
+    }
+
+    stream.on('data', (data) => {
+        const input = data.toString();
+        if (input === '\x03') {
+            stream.end();
+        }
+        if (input === 'a' || input === '\x1B[D') {
+            selector = Math.max(selector - 1, 0);
+        } else if (input === 'd' || input === '\x1B[C') {
+            selector = Math.min(selector + 1, columns - 1);
+        } else if (input === ' ' || input === '\r') {
+            if (dropToken(selector)) {
+                if (checkWin(currentPlayer)) {
+                    printBoard();
+                    stream.write(`Player ${currentPlayer} wins!\r\n`);
+                    stream.end();
+                } else if (checkTie()) {
+                    printBoard();
+                    stream.write('It\'s a tie!\r\n');
+                    stream.end();
+                } else {
+                    currentPlayer = 3 - currentPlayer;
+                    aiMove();
+                }
+            }
+        }
+        printBoard();
+    })
+
+    function minimax(board, depth, alpha, beta, maximizingPlayer) {
+        
+    }
+
+    function evaluateBoard() {
+        let score = 0;
+
+        for (let row = 0; row < rows; row++) {
+            for (let col = 0; col < columns - 3; col++) {
+                score += evaluateSegment([board[row][col], board[row][col + 1], board[row][col + 2], board[row][col + 3]]);
+            }
+        }
+
+        for (let row = 0; row < rows - 3; row++) {
+            for (let col = 0; col < columns; col++) {
+                score += evaluateSegment([board[row][col], board[row + 1][col], board[row + 2][col], board[row + 3][col]]);
+            }
+        }
+
+        for (let row = 0; row < rows - 3; row++) {
+            for (let col = 0; col < columns - 3; col++) {
+                score += evaluateSegment([board[row][col], board[row + 1][col + 1], board[row + 2][col + 2], board[row + 3][col + 3]]);
+            }
+        }
+
+        for (let row = 0; row < rows - 3; row++) {
+            for (let col = 3; col < columns; col++) {
+                score += evaluateSegment([board[row][col], board[row + 1][col - 1], board[row + 2][col - 2], board[row + 3][col - 3]]);
+            }
+        }
+
+        return score;
+    }
+
+    function evaluateSegment(segment) {
+        let score = 0;
+        let playerCount = 0;
+        let aiCount = 0;
+        let emptyCount = 0;
+
+        for (let cell of segment) {
+            if (cell === 1) {
+                playerCount++;
+            } else if (cell === 2) {
+                aiCount++;
+            } else {
+                emptyCount++;
+            }
+        }
+
+        if (aiCount === 4) {
+            score += 100;
+        } else if (aiCount === 3 && emptyCount === 1) {
+            score += 10;
+        } else if (aiCount === 2 && emptyCount === 2) {
+            score += 5;
+        }
+
+        if (playerCount === 4) {
+            score -= 100;
+        } else if (playerCount === 3 && emptyCount === 1) {
+            score -= 10;
+        } else if (playerCount === 2 && emptyCount === 2) {
+            score -= 5;
+        }
+
+        return score;
+    }
+
+    function aiMove() {
+        const depth = 4;
+        const [col, _] = minimax(board, depth, -Infinity, Infinity, true);
+        if (col !== null) {
+            dropToken(col);
+            if (checkWin(currentPlayer)) {
+                printBoard();
+                stream.write(`Player ${currentPlayer} wins!\r\n`);
+            } else if (checkTie()) {
+                printBoard();
+                stream.write('It\'s a tie!\r\n');
+            } else {
+                currentPlayer = 3 - currentPlayer;
+
+            }
+        }
+    }
 
     function getNextOpenRow(col) {
         for (let row = rows - 1; row >= 0; row--) {
