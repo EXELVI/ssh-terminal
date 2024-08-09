@@ -208,7 +208,9 @@ function startConnectFourGame(stream) {
     function printBoard() {
         stream.write('\x1Bc');
         board.forEach(row => {
-            stream.write(row.map(cell => (cell === 0 ? '.' : cell === 1 ? 'X' : 'O')).join(' ') + '\r\n');
+            stream.write(row.map(cell => 
+                (cell === 0 ? '.' : cell === 1 ? chalk.red('O') : chalk.blue('O'))
+            ).join(' ') + '\r\n');
         });
 
         stream.write('0 1 2 3 4 5 6\r\n');
@@ -298,11 +300,11 @@ function startConnectFourGame(stream) {
             if (dropToken(selector)) {
                 if (checkWin(currentPlayer)) {
                     printBoard();
-                    stream.write(`Player ${currentPlayer} wins!\r\n`);
+                    stream.write(chalk.green(`Player ${currentPlayer} wins!\r\n`));
                     stream.end();
                 } else if (checkTie()) {
                     printBoard();
-                    stream.write('It\'s a tie!\r\n');
+                    stream.write(chalk.yellow('It\'s a tie!\r\n'));
                     stream.end();
                 } else {
                     currentPlayer = 3 - currentPlayer;
@@ -314,7 +316,62 @@ function startConnectFourGame(stream) {
     })
 
     function minimax(board, depth, alpha, beta, maximizingPlayer) {
-        
+        const validColumns = getValidColumns();
+        const isTerminal = validColumns.length === 0 || depth === 0;
+
+        if (isTerminal) {
+            if (depth === 0 || validColumns.length === 0) {
+                return [null, evaluateBoard()];
+            }
+            if (currentPlayerWins(1)) {
+                return [null, -1000];
+            }
+            if (currentPlayerWins(2)) {
+                return [null, 1000];
+            }
+        }
+
+        if (maximizingPlayer) {
+            let value = -Infinity;
+            let column = validColumns[Math.floor(Math.random() * validColumns.length)];
+            for (let col of validColumns) {
+                const row = getNextOpenRow(col);
+                if (row !== null) {
+                    board[row][col] = 2;
+                    let newScore = minimax(board, depth - 1, alpha, beta, false)[1];
+                    board[row][col] = 0;
+                    if (newScore > value) {
+                        value = newScore;
+                        column = col;
+                    }
+                    alpha = Math.max(alpha, value);
+                    if (alpha >= beta) {
+                        break;
+                    }
+                }
+            }
+            return [column, value];
+        } else {
+            let value = Infinity;
+            let column = validColumns[Math.floor(Math.random() * validColumns.length)];
+            for (let col of validColumns) {
+                const row = getNextOpenRow(col);
+                if (row !== null) {
+                    board[row][col] = 1;
+                    let newScore = minimax(board, depth - 1, alpha, beta, true)[1];
+                    board[row][col] = 0;
+                    if (newScore < value) {
+                        value = newScore;
+                        column = col;
+                    }
+                    beta = Math.min(beta, value);
+                    if (alpha >= beta) {
+                        break;
+                    }
+                }
+            }
+            return [column, value];
+        }
     }
 
     function evaluateBoard() {
@@ -389,10 +446,12 @@ function startConnectFourGame(stream) {
             dropToken(col);
             if (checkWin(currentPlayer)) {
                 printBoard();
-                stream.write(`Player ${currentPlayer} wins!\r\n`);
+                stream.write(chalk.blue(`AI wins!\r\n`));
+                stream.end();
             } else if (checkTie()) {
                 printBoard();
-                stream.write('It\'s a tie!\r\n');
+                stream.write(chalk.yellow('It\'s a tie!\r\n'));
+                stream.end();
             } else {
                 currentPlayer = 3 - currentPlayer;
 
