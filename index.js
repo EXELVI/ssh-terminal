@@ -195,115 +195,136 @@ if (hostKey) {
 
 
 function start2048Game(stream) {
-    
     const gridSize = 4;
     let grid = createGrid(gridSize);
     let score = 0;
-    
+
     function createGrid(size) {
-      let grid = [];
-      for (let i = 0; i < size; i++) {
-        grid.push(new Array(size).fill(0));
-      }
-      return grid;
-    }
-    
-    function addRandomTile() {
-      let emptyTiles = [];
-      for (let r = 0; r < gridSize; r++) {
-        for (let c = 0; c < gridSize; c++) {
-          if (grid[r][c] === 0) {
-            emptyTiles.push([r, c]);
-          }
+        let grid = [];
+        for (let i = 0; i < size; i++) {
+            grid.push(new Array(size).fill(0));
         }
-      }
-      
-      if (emptyTiles.length > 0) {
-        let [row, col] = emptyTiles[Math.floor(Math.random() * emptyTiles.length)];
-        grid[row][col] = Math.random() < 0.9 ? 2 : 4;
-      }
+        return grid;
     }
-    
+
+    function addRandomTile() {
+        let emptyTiles = [];
+        for (let r = 0; r < gridSize; r++) {
+            for (let c = 0; c < gridSize; c++) {
+                if (grid[r][c] === 0) {
+                    emptyTiles.push([r, c]);
+                }
+            }
+        }
+
+        if (emptyTiles.length > 0) {
+            let [row, col] = emptyTiles[Math.floor(Math.random() * emptyTiles.length)];
+            grid[row][col] = Math.random() < 0.9 ? 2 : 4;
+        }
+    }
+
+    function colorTile(val, txt = true) {
+        let text = val === 0 ? '   ' : val.toString().padStart(3);
+        if (!txt) text = '   ';
+        switch(val) {
+            case 2: return chalk.bgHex("eee4da").black(` ${text} `);
+            case 4: return chalk.bgHex("ede0c8").black(` ${text} `);
+            case 8: return chalk.bgHex("f2b179").black(` ${text} `);
+            case 16: return chalk.bgHex("f59563").black(` ${text} `);
+            case 32: return chalk.bgHex("f67c5f").black(` ${text} `);
+            case 64: return chalk.bgHex("f65e3b").black(` ${text} `);
+            case 128: return chalk.bgHex("edcf72").black(` ${text} `);
+            case 256: return chalk.bgHex("edcc61").black(` ${text} `);
+            case 512: return chalk.bgHex("edc850").black(` ${text} `);
+            case 1024: return chalk.bgHex("edc53f").black(` ${text} `);
+            case 2048: return chalk.bgHex("edc22e").black(` ${text} `);
+            default: return chalk.bgHex("cdc1b5").black(` ${text} `);
+        }
+    }
+
     function printGrid() {
         stream.write('\x1Bc');
-      stream.write(`Score: ${score}` + '\r\n');
-      for (let r = 0; r < gridSize; r++) {
-        stream.write(grid[r].map(val => (val === 0 ? '.' : val)).join(' ') + '\r\n');
-      }
+        stream.write(`Score: ${score}` + '\r\n');
+        
+        for (let r = 0; r < gridSize; r++) {
+            stream.write(grid[r].map(val => colorTile(val, false)).join('') + '\r\n');
+            stream.write(grid[r].map(val => colorTile(val)).join('') + '\r\n');
+            stream.write(grid[r].map(val => colorTile(val, false)).join('') + '\r\n');
+        }
     }
-    
+
     function combineRowLeft(row) {
-      let newRow = row.filter(val => val !== 0);
-      for (let i = 0; i < newRow.length - 1; i++) {
-        if (newRow[i] === newRow[i + 1]) {
-          newRow[i] *= 2;
-          score += newRow[i];
-          newRow[i + 1] = 0;
+        let newRow = row.filter(val => val !== 0);
+        for (let i = 0; i < newRow.length - 1; i++) {
+            if (newRow[i] === newRow[i + 1]) {
+                newRow[i] *= 2;
+                score += newRow[i];
+                newRow[i + 1] = 0;
+            }
         }
-      }
-      return newRow.filter(val => val !== 0).concat(new Array(gridSize).fill(0)).slice(0, gridSize);
+        return newRow.filter(val => val !== 0).concat(new Array(gridSize).fill(0)).slice(0, gridSize);
     }
-    
+
     function moveLeft() {
-      let changed = false;
-      for (let r = 0; r < gridSize; r++) {
-        let newRow = combineRowLeft(grid[r]);
-        if (grid[r].toString() !== newRow.toString()) {
-          changed = true;
+        let changed = false;
+        for (let r = 0; r < gridSize; r++) {
+            let newRow = combineRowLeft(grid[r]);
+            if (grid[r].toString() !== newRow.toString()) {
+                changed = true;
+            }
+            grid[r] = newRow;
         }
-        grid[r] = newRow;
-      }
-      if (changed) addRandomTile();
+        if (changed) addRandomTile();
     }
-    
+
     function rotateGrid() {
-      let newGrid = createGrid(gridSize);
-      for (let r = 0; r < gridSize; r++) {
-        for (let c = 0; c < gridSize; c++) {
-          newGrid[c][gridSize - 1 - r] = grid[r][c];
+        let newGrid = createGrid(gridSize);
+        for (let r = 0; r < gridSize; r++) {
+            for (let c = 0; c < gridSize; c++) {
+                newGrid[c][gridSize - 1 - r] = grid[r][c];
+            }
         }
-      }
-      grid = newGrid;
+        grid = newGrid;
     }
-    
+
     function moveRight() {
-      rotateGrid();
-      rotateGrid();
-      moveLeft();
-      rotateGrid();
-      rotateGrid();
+        rotateGrid();
+        rotateGrid();
+        moveLeft();
+        rotateGrid();
+        rotateGrid();
     }
-    
+
     function moveUp() {
-      rotateGrid();
-      rotateGrid();
-      rotateGrid();
-      moveLeft();
-      rotateGrid();
+        rotateGrid();
+        rotateGrid();
+        rotateGrid();
+        moveLeft();
+        rotateGrid();
     }
-    
+
     function moveDown() {
-      rotateGrid();
-      moveLeft();
-      rotateGrid();
-      rotateGrid();
-      rotateGrid();
+        rotateGrid();
+        moveLeft();
+        rotateGrid();
+        rotateGrid();
+        rotateGrid();
     }
-    
+
     function isGameOver() {
-      for (let r = 0; r < gridSize; r++) {
-        for (let c = 0; c < gridSize; c++) {
-          if (grid[r][c] === 0) return false;
-          if (c < gridSize - 1 && grid[r][c] === grid[r][c + 1]) return false;
-          if (r < gridSize - 1 && grid[r][c] === grid[r + 1][c]) return false;
+        for (let r = 0; r < gridSize; r++) {
+            for (let c = 0; c < gridSize; c++) {
+                if (grid[r][c] === 0) return false;
+                if (c < gridSize - 1 && grid[r][c] === grid[r][c + 1]) return false;
+                if (r < gridSize - 1 && grid[r][c] === grid[r + 1][c]) return false;
+            }
         }
-      }
-      return true;
+        return true;
     }
 
     stream.on('data', (data) => {
-        const input = data.toString()
-        
+        const input = data.toString();
+
         if (input === '\x03') {
             stream.end();
         } else if (input === 'w' || input === '\x1B[A') {
@@ -318,17 +339,16 @@ function start2048Game(stream) {
 
         if (isGameOver()) {
             printGrid();
-            console.log('Game Over!');
-            rl.close();
-          } else {
+            stream.write('Game over!\r\n');
+            stream.end();
+        } else {
             printGrid();
-          }
-        });    
-    
-      addRandomTile();
-      addRandomTile();
-      printGrid();
-    
+        }
+    });
+
+    addRandomTile();
+    addRandomTile();
+    printGrid();
 }
 
 
@@ -349,13 +369,13 @@ function startConnectFourGame(stream) {
                 if (cell === 0) {
                     return colIndex === selector ? chalk.bgRgb(30, 30, 30)(isAiNextMove ? chalk.yellow('?') : '.') : isAiNextMove ? chalk.yellow('?') : '.';
                 } else if (cell === 1) {
-                    return isWinningToken ? chalk.bgRed.white('O') : 
-                    colIndex === selector ? 
-                    chalk.bgRgb(20, 20, 20).red('O') : chalk.red('O');
+                    return isWinningToken ? chalk.bgRed.white('O') :
+                        colIndex === selector ?
+                            chalk.bgRgb(20, 20, 20).red('O') : chalk.red('O');
                 } else {
-                    return isWinningToken ? chalk.bgBlue.white('O') : 
-                    colIndex === selector ? 
-                    chalk.bgRgb(20, 20, 20).blue('O') : chalk.blue('O');
+                    return isWinningToken ? chalk.bgBlue.white('O') :
+                        colIndex === selector ?
+                            chalk.bgRgb(20, 20, 20).blue('O') : chalk.blue('O');
                 }
             }).join(' ') + '\r\n');
         });
@@ -510,7 +530,7 @@ function startConnectFourGame(stream) {
         const depth = 4;
         const [suggestedColumn, _] = minimax(board, depth, -Infinity, Infinity, true);
         if (suggestedColumn !== null) {
-            selector = suggestedColumn; 
+            selector = suggestedColumn;
         }
     }
 
