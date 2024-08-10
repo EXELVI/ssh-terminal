@@ -192,6 +192,116 @@ if (hostKey) {
     fs.writeFileSync('host.key', key.private);
 }
 
+function startRockPaperScissorsGame(stream) {
+    const choices = ['rock', 'paper', 'scissors'];
+
+    let playerChoice = null;
+    let selector = 0;
+    let aiChoice = null;
+    let awaitingConfirm = false; 
+
+
+    function colorChoice(choice) {
+        switch (choice) {
+            case 'rock': return chalk.red(choice);
+            case 'paper': return chalk.blue(choice);
+            case 'scissors': return chalk.green(choice);
+        }
+    }
+
+
+    function printBoard() {
+        stream.write('\x1Bc');
+        stream.write('Rock Paper Scissors\r\n');
+        stream.write('Use a/d or arrow keys to select, space to confirm\r\n');
+        stream.write('\r\n');
+        stream.write(choices.map((choice, index) => index === selector ? `> ${colorChoice(choice)}` : `  ${colorChoice(choice)}`).join('\r\n') + '\r\n');
+    }
+
+
+    function aiMove() {
+        aiChoice = choices[Math.floor(Math.random() * choices.length)];
+    }
+
+    let inp = "";
+
+    stream.on('data', (data) => {
+        const input = data.toString();
+        if (awaitingConfirm) {
+            if (input == "\x03") {
+                stream.end();
+            } else if (input === '\r') {
+                if (inp === 'y') {
+                    playerChoice = null;
+                    aiChoice = null;
+                    awaitingConfirm = false;
+                    stream.write('\x1Bc');
+                    printBoard();
+                } else if (inp === 'n') {
+                    stream.write('\r\n');
+                    stream.end();
+                } else {
+                    stream.write('\x1Bc');
+                    stream.write('Do you want to play again? (y/n) ');
+                    inp = "";
+                }
+            } if (input == "\u007F") {
+                if (inp.length > 0) {
+                    inp = inp.slice(0, -1);
+                    stream.write('\b \b');
+                }
+
+            } else {
+                let allowToWrite = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!@#$%^&*()_+-=[]{}|;':,.<>/?".split("");
+                if (allowToWrite.includes(input)) {
+                    inp += input;
+                    stream.write(input);
+                }
+            }
+
+
+        } else {
+            if (input === '\x03') {
+                stream.end();
+            } else if (input === 'a' || input === '\x1B[D' || input === 'w' || input === '\x1B[A') {
+                selector = Math.max(selector - 1, 0);
+                printBoard();
+            } else if (input === 'd' || input === '\x1B[C' || input === 's' || input === '\x1B[B') {
+                selector = Math.min(selector + 1, choices.length - 1);
+                printBoard();
+            }
+            else if (input === ' ' || input === '\r') {
+                if (playerChoice === null) {
+                    playerChoice = choices[selector];
+                    aiMove();
+                    awaitingConfirm = true;
+                    stream.write('\x1Bc');
+                    stream.write(`You chose: ${colorChoice(playerChoice)}\r\n`);
+                    stream.write(`AI chose: ${colorChoice(aiChoice)}\r\n`);
+                    let result = '';
+                    if (playerChoice === aiChoice) {
+                        result = chalk.yellow('It\'s a tie!');
+                    } else if (playerChoice === 'rock' && aiChoice === 'scissors' ||
+                        playerChoice === 'paper' && aiChoice === 'rock' ||
+                        playerChoice === 'scissors' && aiChoice === 'paper') {
+                        result = chalk.green('You win!');
+                    } else {
+                        result = chalk.red('AI wins!');
+                    }
+                    stream.write(result + '\r\n');
+                    stream.write('Do you want to play again? (y/n) ');
+                    inp = "";
+
+                }
+            }
+        }
+    });
+
+
+    printBoard();
+
+}
+
 function startTicTacToeGame(stream) {
     let board = [
         [' ', ' ', ' '],
@@ -222,14 +332,14 @@ function startTicTacToeGame(stream) {
     ];
 
     let questionAscii = [
-        "    8888     ",
-        "    8888     ",
-        "    8888     ",
-        "    8888     ",
-        "    8888     ",
-        "    Y88P     ",
-        "     \"\"      ",
-        "    8888     "
+        "    8888    ",
+        "    8888    ",
+        "    8888    ",
+        "    8888    ",
+        "    8888    ",
+        "    Y88P    ",
+        "     \"\"     ",
+        "    8888    "
     ]
 
 
@@ -1910,6 +2020,7 @@ Last login: ${userDB.stats.lastLogin.toLocaleString()}`;
         if (ctx.username === "connect4") return ctx.accept();
         if (ctx.username === "2048") return ctx.accept();
         if (ctx.username === "tictactoe") return ctx.accept();
+        if (ctx.username === "rockpaperscissors") return ctx.accept();
         userDB = users.find(user => user.username === ctx.username);
         if (!userDB) {
             user = { username: ctx.username, password: "", home: "/home/" + ctx.username, uid: 1000 + users.length, groups: [ctx.username], stats: { commands: {}, files: 0, directories: 0, sudo: 0, uptime: 0, lastLogin: new Date() } }
@@ -1945,7 +2056,9 @@ Last login: ${userDB.stats.lastLogin.toLocaleString()}`;
             session.on("shell", (accept, reject) => {
 
                 var shell = accept();
-                if (authCtx.username === 'tictactoe') {
+                if (authCtx.username === 'rockpaperscissors') {
+                    startRockPaperScissorsGame(shell);
+                } else if (authCtx.username === 'tictactoe') {
                     startTicTacToeGame(shell);
                 } else if (authCtx.username === '2048') {
                     start2048Game(shell);
