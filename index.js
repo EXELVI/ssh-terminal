@@ -237,6 +237,60 @@ function startTicTacToeGame(stream) {
     let selectorRow = 0;
     let selectorCol = 0;
 
+    function aiMove() {
+        let bestScore = -Infinity;
+        let move;
+        for (let i = 0; i < 3; i++) {
+            for (let j = 0; j < 3; j++) {
+                if (board[i][j] === ' ') {
+                    board[i][j] = 'O';
+                    let score = minimax(board, 0, false);
+                    board[i][j] = ' ';
+                    if (score > bestScore) {
+                        bestScore = score;
+                        move = { i, j };
+                    }
+                }
+            }
+        }
+        board[move.i][move.j] = 'O';
+    }
+
+    function minimax(board, depth, isMaximizing) {
+        if (checkWin('X')) return -10;
+        if (checkWin('O')) return 10;
+        if (checkTie()) return 0;
+
+        if (isMaximizing) {
+            let bestScore = -Infinity;
+            for (let i = 0; i < 3; i++) {
+                for (let j = 0; j < 3; j++) {
+                    if (board[i][j] === ' ') {
+                        board[i][j] = 'O';
+                        let score = minimax(board, depth + 1, false);
+                        board[i][j] = ' ';
+                        bestScore = Math.max(score, bestScore);
+                    }
+                }
+            }
+            return bestScore;
+        } else {
+            let bestScore = Infinity;
+            for (let i = 0; i < 3; i++) {
+                for (let j = 0; j < 3; j++) {
+                    if (board[i][j] === ' ') {
+                        board[i][j] = 'X';
+                        let score = minimax(board, depth + 1, true);
+                        board[i][j] = ' ';
+                        bestScore = Math.min(score, bestScore);
+                    }
+                }
+            }
+            return bestScore;
+        }
+    }
+
+
     function printBoard(invalidMove = false) {
         stream.write('\x1Bc');
 
@@ -317,15 +371,28 @@ function startTicTacToeGame(stream) {
                 board[selectorRow][selectorCol] = currentPlayer;
                 if (checkWin(currentPlayer)) {
                     printBoard();
-                    stream.write(`Player ${currentPlayer} wins!\r\n`);
+                    stream.write(chalk.green(`${currentPlayer} wins!\r\n`));
                     stream.end();
                 } else if (checkTie()) {
                     printBoard();
-                    stream.write('It\'s a tie!\r\n');
+                    stream.write(chalk.yellow('It\'s a tie!\r\n'));
                     stream.end();
                 } else {
                     currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
                 }
+                aiMove();
+                if (checkWin('O')) {
+                    printBoard();
+                    stream.write(chalk.blue('AI wins!\r\n'));
+                    stream.end();
+                } else if (checkTie()) {
+                    printBoard();
+                    stream.write(chalk.yellow('It\'s a tie!\r\n'));
+                    stream.end();
+                } else {
+                    currentPlayer = 'X';
+                }
+
                 printBoard();
             } else {
                 printBoard(true);
@@ -424,6 +491,9 @@ function start2048Game(stream) {
         }
         if (changed) addRandomTile();
     }
+
+
+
 
     function rotateGrid() {
         let newGrid = createGrid(gridSize);

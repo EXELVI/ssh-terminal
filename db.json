@@ -229,6 +229,27 @@
         "best": 30,
         "uptime": 3576
       }
+    },
+    {
+      "username": "nasa",
+      "password": "",
+      "home": "/home/nasa",
+      "uid": 1012,
+      "groups": [
+        "nasa"
+      ],
+      "stats": {
+        "commands": {
+          "clear": 1,
+          "whoami": 1,
+          "exit": 2
+        },
+        "files": 0,
+        "directories": 0,
+        "sudo": 0,
+        "uptime": 48759,
+        "lastLogin": "2024-08-10T10:48:09.448Z"
+      }
     }
   ],
   "fileSystem": {
@@ -953,6 +974,50 @@
                   "lastModified": "2024-01-01T00:00:00.000Z",
                   "created": "2024-01-01T00:00:00.000Z",
                   "content": ""
+                },
+                ".bashrc": {
+                  "type": "file",
+                  "owner": 0,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": ""
+                },
+                ".bash_aliases": {
+                  "type": "file",
+                  "owner": 0,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": ""
+                },
+                "desktop": {
+                  "type": "directory",
+                  "owner": 0,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": {}
+                },
+                "documents": {
+                  "type": "directory",
+                  "owner": 0,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": {}
+                }
+              }
+            },
+            "nasa": {
+              "type": "directory",
+              "owner": 0,
+              "lastModified": "2024-01-01T00:00:00.000Z",
+              "created": "2024-01-01T00:00:00.000Z",
+              "content": {
+                ".bash_history": {
+                  "type": "file",
+                  "owner": 0,
+                  "lastModified": "2024-08-10T10:48:59.250Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": "clear\nwhoami\nexit\nexit\n",
+                  "size": 23
                 },
                 ".bashrc": {
                   "type": "file",
