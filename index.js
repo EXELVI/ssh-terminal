@@ -115,7 +115,6 @@ const fileSystemFunctions = {
 };
 
 
-
 function navigateToPath(path, parent = false, content = true) {
     const parts = path.split('/').filter(part => part.length > 0);
     let current = fileSystem['/']
@@ -193,6 +192,78 @@ if (hostKey) {
     fs.writeFileSync('host.key', key.private);
 }
 
+function startTicTacToeGame(stream) {
+    let board = [
+        [' ', ' ', ' '],
+        [' ', ' ', ' '],
+        [' ', ' ', ' ']
+    ];
+
+    let currentPlayer = 'X';
+    let selectorRow = 0;
+    let selectorCol = 0;
+
+    function printBoard() {
+        stream.write('\x1Bc');
+        for (let i = 0; i < 3; i++) {
+            stream.write(board[i].join(' | ') + '\r\n');
+            if (i < 2) {
+                stream.write('---------\r\n');
+            }
+        }
+    }
+
+    function checkWin(player) {
+        for (let i = 0; i < 3; i++) {
+            if (board[i][0] === player && board[i][1] === player && board[i][2] === player) return true;
+            if (board[0][i] === player && board[1][i] === player && board[2][i] === player) return true;
+        }
+        if (board[0][0] === player && board[1][1] === player && board[2][2] === player) return true;
+        if (board[0][2] === player && board[1][1] === player && board[2][0] === player) return true;
+        return false;
+    }
+
+    function checkTie() {
+        return board.flat().every(cell => cell !== ' ');
+    }
+
+  
+
+  stream.on('data', (data) => {
+    const input = data.toString();
+    if (input === '\x03') {
+      stream.end();
+    } else if (input === 'w' || input === '\x1B[A') {
+      selectorRow = Math.max(selectorRow - 1, 0);
+    } else if (input === 'a' || input === '\x1B[D') {
+      selectorCol = Math.max(selectorCol - 1, 0);
+    } else if (input === 's' || input === '\x1B[B') {
+      selectorRow = Math.min(selectorRow + 1, 2);
+    } else if (input === 'd' || input === '\x1B[C') {
+      selectorCol = Math.min(selectorCol + 1, 2);
+    } else if (input === ' ' || input === '\r') {
+      if (board[selectorRow][selectorCol] === ' ') {
+        board[selectorRow][selectorCol] = currentPlayer;
+        if (checkWin(currentPlayer)) {
+          printBoard();
+          stream.write(`Player ${currentPlayer} wins!\r\n`);
+          stream.end();
+        } else if (checkTie()) {
+          printBoard();
+          stream.write('It\'s a tie!\r\n');
+          stream.end();
+        } else {
+          currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+        }
+      }
+    }
+    printBoard();
+  });
+
+    printBoard();
+
+}
+
 
 function start2048Game(stream) {
     const gridSize = 4;
@@ -226,7 +297,7 @@ function start2048Game(stream) {
     function colorTile(val, txt = true) {
         let text = val === 0 ? '   ' : val.toString().padStart(3);
         if (!txt) text = '   ';
-        switch(val) {
+        switch (val) {
             case 2: return chalk.bgHex("eee4da").black(` ${text} `);
             case 4: return chalk.bgHex("ede0c8").black(` ${text} `);
             case 8: return chalk.bgHex("f2b179").black(` ${text} `);
@@ -245,7 +316,7 @@ function start2048Game(stream) {
     function printGrid() {
         stream.write('\x1Bc');
         stream.write(`Score: ${score}` + '\r\n');
-        
+
         for (let r = 0; r < gridSize; r++) {
             stream.write(grid[r].map(val => colorTile(val, false)).join('') + '\r\n');
             stream.write(grid[r].map(val => colorTile(val)).join('') + '\r\n');
@@ -1692,6 +1763,7 @@ Last login: ${userDB.stats.lastLogin.toLocaleString()}`;
         if (ctx.username === "clock") return ctx.accept();
         if (ctx.username === "connect4") return ctx.accept();
         if (ctx.username === "2048") return ctx.accept();
+        if (ctx.username === "tictactoe") return ctx.accept();
         userDB = users.find(user => user.username === ctx.username);
         if (!userDB) {
             user = { username: ctx.username, password: "", home: "/home/" + ctx.username, uid: 1000 + users.length, groups: [ctx.username], stats: { commands: {}, files: 0, directories: 0, sudo: 0, uptime: 0, lastLogin: new Date() } }
@@ -1727,7 +1799,9 @@ Last login: ${userDB.stats.lastLogin.toLocaleString()}`;
             session.on("shell", (accept, reject) => {
 
                 var shell = accept();
-                if (authCtx.username === '2048') {
+                if (authCtx.username === 'tictactoe') {
+                    startTicTacToeGame(shell);
+                } else if (authCtx.username === '2048') {
                     start2048Game(shell);
                 } else if (authCtx.username === 'connect4') {
                     startConnectFourGame(shell);
