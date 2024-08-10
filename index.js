@@ -199,18 +199,90 @@ function startTicTacToeGame(stream) {
         [' ', ' ', ' ']
     ];
 
+    let xAscii = [
+        "Y88b   d88P ",
+        " Y88b d88P  ",
+        "  Y88o88P   ",
+        "   Y888P    ",
+        "   d888b    ",
+        "  d88888b   ",
+        " d88P Y88b  ",
+        "d88P   Y88b "
+    ];
+
+    let oAscii = [
+        " .d88888b.  ",
+        "d88P\" \"Y88b ",
+        "888     888 ",
+        "888     888 ",
+        "888     888 ",
+        "888     888 ",
+        "Y88b. .d88P ",
+        " \"Y88888P\"  "
+    ];
+
+    let questionAscii = [
+        "    8888     ",
+        "    8888     ",
+        "    8888     ",
+        "    8888     ",
+        "    8888     ",
+        "    Y88P     ",
+        "     \"\"      ",
+        "    8888     "
+    ]
+
+
     let currentPlayer = 'X';
     let selectorRow = 0;
     let selectorCol = 0;
 
-    function printBoard() {
+    function printBoard(invalidMove = false) {
         stream.write('\x1Bc');
+
         for (let i = 0; i < 3; i++) {
-            stream.write(board[i].join(' | ') + '\r\n');
-            if (i < 2) {
-                stream.write('---------\r\n');
+            for (let row = 0; row < 8; row++) {
+                for (let j = 0; j < 3; j++) {
+                    let cell = board[i][j];
+                    if (cell === 'X') {
+                        let text = chalk.red(xAscii[row])
+                        if (j === selectorCol && i === selectorRow) {
+                            if (invalidMove) {
+                                text = chalk.red(questionAscii[row]);
+                            }
+                            text = chalk.bgRgb(20, 20, 20)(text);
+
+                        }
+                        stream.write(text);
+                    } else if (cell === 'O') {
+                        let text = chalk.blue(oAscii[row]);
+                        if (j === selectorCol && i === selectorRow) {
+                            if (invalidMove) {
+                                text = chalk.blue(questionAscii[row]);
+                            }
+                            text = chalk.bgRgb(20, 20, 20)(text);
+                        }
+                        stream.write(text);
+                    } else {
+                        if (j === selectorCol && i === selectorRow) {
+                            stream.write(chalk.bgRgb(20, 20, 20)(' '.repeat(12)));
+                        } else {
+                            stream.write(' '.repeat(12));
+                        }
+                    }
+                    if (j < 2) {
+                        stream.write(' | ');
+                    }
+                }
+                stream.write('\r\n');
+
             }
+            if (i < 2) {
+                stream.write('-------------+--------------+-------------\r\n');
+            }
+
         }
+        stream.write('\r\n');
     }
 
     function checkWin(player) {
@@ -227,42 +299,47 @@ function startTicTacToeGame(stream) {
         return board.flat().every(cell => cell !== ' ');
     }
 
-  
+    stream.on('data', (data) => {
+        const input = data.toString();
+        if (input === '\x03') {
+            stream.end();
+        } else if (input === 'w' || input === '\x1B[A') {
+            selectorRow = Math.max(selectorRow - 1, 0);
+        } else if (input === 'a' || input === '\x1B[D') {
+            selectorCol = Math.max(selectorCol - 1, 0);
+        } else if (input === 's' || input === '\x1B[B') {
+            selectorRow = Math.min(selectorRow + 1, 2);
+        } else if (input === 'd' || input === '\x1B[C') {
+            selectorCol = Math.min(selectorCol + 1, 2);
 
-  stream.on('data', (data) => {
-    const input = data.toString();
-    if (input === '\x03') {
-      stream.end();
-    } else if (input === 'w' || input === '\x1B[A') {
-      selectorRow = Math.max(selectorRow - 1, 0);
-    } else if (input === 'a' || input === '\x1B[D') {
-      selectorCol = Math.max(selectorCol - 1, 0);
-    } else if (input === 's' || input === '\x1B[B') {
-      selectorRow = Math.min(selectorRow + 1, 2);
-    } else if (input === 'd' || input === '\x1B[C') {
-      selectorCol = Math.min(selectorCol + 1, 2);
-    } else if (input === ' ' || input === '\r') {
-      if (board[selectorRow][selectorCol] === ' ') {
-        board[selectorRow][selectorCol] = currentPlayer;
-        if (checkWin(currentPlayer)) {
-          printBoard();
-          stream.write(`Player ${currentPlayer} wins!\r\n`);
-          stream.end();
-        } else if (checkTie()) {
-          printBoard();
-          stream.write('It\'s a tie!\r\n');
-          stream.end();
-        } else {
-          currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+        } else if (input === ' ' || input === '\r') {
+            if (board[selectorRow][selectorCol] === ' ') {
+                board[selectorRow][selectorCol] = currentPlayer;
+                if (checkWin(currentPlayer)) {
+                    printBoard();
+                    stream.write(`Player ${currentPlayer} wins!\r\n`);
+                    stream.end();
+                } else if (checkTie()) {
+                    printBoard();
+                    stream.write('It\'s a tie!\r\n');
+                    stream.end();
+                } else {
+                    currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+                }
+                printBoard();
+            } else {
+                printBoard(true);
+                setTimeout(() => printBoard(), 200);
+            }
         }
-      }
-    }
-    printBoard();
-  });
+        if (input !== ' ' && input !== '\r') {
+            printBoard();
+        }
+    });
 
     printBoard();
-
 }
+
 
 
 function start2048Game(stream) {
@@ -436,7 +513,6 @@ function startConnectFourGame(stream) {
             stream.write(row.map((cell, colIndex) => {
                 const isWinningToken = winningTokens.some(([r, c]) => r === rowIndex && c === colIndex);
                 const isAiNextMove = aiNextMove === colIndex && rowIndex === getNextOpenRow(colIndex);
-                console.log(aiNextMove)
                 if (cell === 0) {
                     return colIndex === selector ? chalk.bgRgb(30, 30, 30)(isAiNextMove ? chalk.yellow('?') : '.') : isAiNextMove ? chalk.yellow('?') : '.';
                 } else if (cell === 1) {
