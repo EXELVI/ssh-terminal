@@ -1382,7 +1382,7 @@ function startConnectFourGame(stream, isCommand = false, options = {}) {
                 } else {
                     currentPlayer = 3 - currentPlayer;
                 }
-            } 
+            }
         }
     }
 
@@ -1403,7 +1403,8 @@ function startConnectFourGame(stream, isCommand = false, options = {}) {
 
 }
 
-function startSnakeGame(stream) {
+
+function startSnakeGame(stream, isCommand = false, options = {}) {
     const width = 20;
     const height = 10;
 
@@ -1597,6 +1598,129 @@ const server = new Server({
     let firstFile = true;
 
     let inputPosition = 0;
+
+    //Snake
+
+    function spawnFood() {
+        let foodPosition;
+        do {
+            foodPosition = {
+                x: Math.floor(Math.random() * width),
+                y: Math.floor(Math.random() * height)
+            };
+        } while (snake.some(segment => segment.x === foodPosition.x && segment.y === foodPosition.y));
+        return foodPosition;
+    }
+
+    const width = 20;
+    const height = 10;
+    let directionsQueue = [];
+    let snake = [{ x: Math.floor(width / 2), y: Math.floor(height / 2) }];
+    let food = spawnFood();
+    let currentDirection = 'd';
+    let gameOver = false;
+
+    const directions = {
+        'w': { x: 0, y: -1 },
+        'a': { x: -1, y: 0 },
+        's': { x: 0, y: 1 },
+        'd': { x: 1, y: 0 }
+    };
+
+
+
+    function drawBoard(gameOver = false, shell) {
+        let board = '';
+        let gameOverMessage = 'Game over     ';
+        gameOverMessage = gameOverMessage.split('')
+        for (let y = 0; y < height; y++) {
+            for (let x = 0; x < width; x++) {
+                if (gameOver && y === Math.floor(height / 2) && x >= Math.floor(width / 2) - Math.floor(gameOverMessage.length / 2) && x < Math.floor(width / 2) + Math.floor(gameOverMessage.length / 2)) {
+                    board += snake.some(segment => segment.x === x && segment.y === y) ? chalk.bgGreen(chalk.red(gameOverMessage.shift() + ' ')) : (food.x === x && food.y === y ? chalk.bgRed(gameOverMessage.shift() + ' ') : chalk.bgRgb(20, 20, 20)(chalk.red(gameOverMessage.shift() + ' ')));
+                } else if (snake.some(segment => segment.x === x && segment.y === y)) {
+                    board += chalk.bgGreen('  ');
+                } else if (food.x === x && food.y === y) {
+                    board += chalk.bgRed('  ');
+                } else {
+                    board += y % 2 === 0 ? x % 2 === 0 ?
+                        (gameOver ? chalk.bgRgb(20, 20, 20)("  ") : chalk.bgRgb(30, 30, 30)("  ")) :
+                        (gameOver ? chalk.bgRgb(20, 20, 20)("  ") : chalk.bgRgb(40, 40, 40)("  ")) :
+                        x % 2 === 0 ?
+                            (gameOver ? chalk.bgRgb(20, 20, 20)("  ") :
+                                chalk.bgRgb(40, 40, 40)("  ")) :
+                            (gameOver ? chalk.bgRgb(20, 20, 20)("  ") :
+                                chalk.bgRgb(30, 30, 30)("  "));
+                }
+
+            }
+            board += '\n';
+        }
+        shell.write('\x1B[2J\x1B[0;0f');
+        shell.write(`Score: ${snake.length - 1} - Best: ${users.find(user => user.username === 'snake')?.stats?.best || 0}\r\n`);
+
+        board.split('\n').forEach(line => shell.write(line + '\r\n'));
+    }
+
+    function updateSnake() {
+        const newHead = {
+            x: snake[0].x + directions[currentDirection].x,
+            y: snake[0].y + directions[currentDirection].y
+        };
+
+        if (
+            newHead.x < 0 || newHead.x >= width ||
+            newHead.y < 0 || newHead.y >= height ||
+            snake.some(segment => segment.x === newHead.x && segment.y === newHead.y)
+        ) {
+            gameOver = true;
+            return;
+        }
+
+        snake.unshift(newHead);
+
+        if (newHead.x === food.x && newHead.y === food.y) {
+            food = spawnFood();
+        } else {
+            snake.pop();
+        }
+    }
+
+
+
+    function gameLoop(shell) {
+        if (gameOver) {
+            shell.write('\x1B[2K\r');
+            var best = users.find(u => u.username === 'snake')?.stats?.best || 0;
+            if (snake.length > best) {
+                users.find(u => u.username === 'snake').stats = { best: snake.length }
+            }
+            drawBoard(true, shell)
+            shell.write('\x1B[31mGame over!\x1B[0m\n');
+            mode = "normal";
+            shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} `);
+            snake = [{ x: 5, y: 5 }];
+            food = spawnFood();
+            currentDirection = 'w';
+            gameOver = false;
+            directionsQueue = [];
+
+            return;
+        }
+        directionsQueue = directionsQueue.filter(direction => {
+            if (directions[direction].x + directions[currentDirection].x !== 0 || directions[direction].y + directions[currentDirection].y !== 0) {
+                currentDirection = direction;
+                return false;
+            }
+            return true;
+        });
+        if (mode == "snake") {
+            drawBoard(false, shell);
+            updateSnake();
+            setTimeout(() => gameLoop(shell), 200);
+        }
+    }
+
+    //Other
 
     var hinput,
         command,
@@ -2442,7 +2566,20 @@ Last login: ${userDB.stats.lastLogin.toLocaleString()}`;
 
                 return false;
             }
-        }
+        },
+        {
+            name: "snake",
+            description: "Play snake game",
+            root: false,
+            execute: function (input, currentUser, shell) {
+                mode = "snake";
+                shell.write('\x1B[2K');
+                gameLoop(shell)
+
+                return false;
+            }
+        },
+
     ];
 
     client.on('authentication', (ctx) => {
@@ -2614,6 +2751,9 @@ Last login: ${userDB.stats.lastLogin.toLocaleString()}`;
 
                     var input = '';
                     var passwordTemp = '';
+
+
+
                     shell.on('data', function (data) {
 
                         console.log('Data:', data.toString());
@@ -2666,6 +2806,44 @@ Last login: ${userDB.stats.lastLogin.toLocaleString()}`;
 
                             tempGame.connect4 = result;
 
+
+                        } else if (mode === "snake") {
+
+                            const input = data.toString()
+
+                            if (input === '\x03') {
+                                gameOver = true;
+                                mode = "normal";
+                                shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} `);
+                                snake = [{ x: 5, y: 5 }];
+                                food = spawnFood();
+                                currentDirection = 'w';
+                                gameOver = false;
+                                directionsQueue = [];
+                                return;
+                            }
+
+
+
+
+                            switch (input) {
+                                case 'w':
+                                case '\x1B[A':
+                                    directionsQueue.push('w');
+                                    break;
+                                case 'a':
+                                case '\x1B[D':
+                                    directionsQueue.push('a');
+                                    break;
+                                case 's':
+                                case '\x1B[B':
+                                    directionsQueue.push('s');
+                                    break;
+                                case 'd':
+                                case '\x1B[C':
+                                    directionsQueue.push('d');
+                                    break;
+                            }
 
                         } else {
 
@@ -2919,8 +3097,8 @@ Last login: ${userDB.stats.lastLogin.toLocaleString()}`;
                         let output = '';
                         hystoryPosition = 1;
                         try {
-                           if (input !== "") {
-                            fileSystemFunctions.addToBashHistory(userDB, input);
+                            if (input !== "") {
+                                fileSystemFunctions.addToBashHistory(userDB, input);
                             }
                         } catch (error) {
                             console.log(error)
