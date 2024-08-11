@@ -949,16 +949,51 @@ function start2048Game(stream, isCommand = false, options = {}) {
     }
 }
 
-
-function startConnectFourGame(stream) {
-    const rows = 6;
-    const columns = 7;
+/**
+ * 
+ * @param {*} stream
+ * @param {Boolean} isCommand
+ * @param {object} options
+ * @param {string} options.input
+ * @param {number} options.selector
+ * @param {Array<Array<number>>} options.board
+ * @param {number} options.currentPlayer
+ * @param {number} options.rows
+ * @param {number} options.columns
+ */
+function startConnectFourGame(stream, isCommand = false, options = {}) {
+    let rows = 6;
+    let columns = 7;
     let selector = 0;
     let board = Array.from({ length: rows }, () => Array(columns).fill(0));
     let currentPlayer = 1;
 
+    console.log("Input: " + options.input)
+    if (isCommand) {
+        if (options.selector) {
+            selector = parseInt(options.selector);
+        }
+        if (options.board) {
+            board = options.board;
+        }
+        if (options.currentPlayer) {
+            currentPlayer = options.currentPlayer;
+        }
+        if (options.rows) {
+            rows = options.rows;
+        }
+        if (options.columns) {
+            columns = options.columns;
+        }
+    }
+
+
     function printBoard(winningTokens = [], aiNextMove = null) {
-        stream.write('\x1Bc');
+        if (!isCommand) stream.write('\x1Bc');
+        else {
+            stream.write('\x1B[2J\x1B[0;0f');
+        }
+
         board.forEach((row, rowIndex) => {
             stream.write(row.map((cell, colIndex) => {
                 const isWinningToken = winningTokens.some(([r, c]) => r === rowIndex && c === colIndex);
@@ -1076,52 +1111,124 @@ function startConnectFourGame(stream) {
         return validColumns;
     }
 
-    stream.on('data', (data) => {
-        const input = data.toString();
-        if (input === '\x03') {
-            stream.end();
-        } else if (input === 'a' || input === '\x1B[D') {
-            selector = Math.max(selector - 1, 0);
-        } else if (input === 'd' || input === '\x1B[C') {
-            selector = Math.min(selector + 1, columns - 1);
-        } else if (input === ' ' || input === '\r') {
-            if (dropToken(selector)) {
-                const winningTokens = checkWin(currentPlayer);
-                if (winningTokens) {
-                    printBoard(winningTokens);
-                    stream.write(chalk.green(`Player ${currentPlayer} wins!\r\n`));
-                    stream.end();
-                } else if (checkTie()) {
-                    printBoard();
-                    stream.write(chalk.yellow('It\'s a tie!\r\n'));
-                    stream.end();
-                } else {
-                    currentPlayer = 3 - currentPlayer;
-                    aiMove();
+    if (!isCommand) {
+        stream.on('data', (data) => {
+            const input = data.toString();
+            if (input === '\x03') {
+                stream.end();
+            } else if (input === 'a' || input === '\x1B[D') {
+                selector = Math.max(selector - 1, 0);
+            } else if (input === 'd' || input === '\x1B[C') {
+                selector = Math.min(selector + 1, columns - 1);
+            } else if (input === ' ' || input === '\r') {
+                if (dropToken(selector)) {
+                    const winningTokens = checkWin(currentPlayer);
+                    if (winningTokens) {
+                        printBoard(winningTokens);
+                        stream.write(chalk.green(`Player ${currentPlayer} wins!\r\n`));
+                        stream.end();
+                    } else if (checkTie()) {
+                        printBoard();
+                        stream.write(chalk.yellow('It\'s a tie!\r\n'));
+                        stream.end();
+                    } else {
+                        currentPlayer = 3 - currentPlayer;
+                        aiMove();
+                    }
                 }
-            }
-        } else if (input === 'm') {
-            hintForPlayer();
-        } else if (input === 'h') {
+            } else if (input === 'm') {
+                hintForPlayer();
+            } else if (input === 'h') {
 
-            var tBoard = JSON.parse(JSON.stringify(board));
-            var col = selector
+                var tBoard = JSON.parse(JSON.stringify(board));
+                var col = selector
 
-            for (let row = rows - 1; row >= 0; row--) {
-                if (tBoard[row][col] === 0) {
-                    tBoard[row][col] = 3 - currentPlayer
+                for (let row = rows - 1; row >= 0; row--) {
+                    if (tBoard[row][col] === 0) {
+                        tBoard[row][col] = 3 - currentPlayer
 
-                    break;
+                        break;
+                    }
                 }
+
+                var [nextMove, _] = minimax(tBoard, 4, -Infinity, Infinity, true);
+
+                printBoard([], nextMove);
+
             }
+            if (input !== 'h') printBoard();
+        });
+    } else {
+        if (options.input) {
+            let input = options.input.toString();
+            if (input === '\x03') {
+                return false;
+            } else if (input === 'a' || input === '\x1B[D') {
+                selector = Math.max(selector - 1, 0);
+            } else if (input === 'd' || input === '\x1B[C') {
+                selector = Math.min(selector + 1, columns - 1);
+            } else if (input === ' ' || input === '\r') {
+                if (dropToken(selector)) {
+                    const winningTokens = checkWin(currentPlayer);
+                    if (winningTokens) {
+                        printBoard(winningTokens);
+                        stream.write(chalk.green(`Player ${currentPlayer} wins!\r\n`));
+                        return false;
+                    } else if (checkTie()) {
+                        printBoard();
+                        stream.write(chalk.yellow('It\'s a tie!\r\n'));
+                        return false;
+                    } else {
+                        currentPlayer = 3 - currentPlayer;
+                        aiMove();
 
-            var [nextMove, _] = minimax(tBoard, 4, -Infinity, Infinity, true);
+                        let winningTokens = checkWin(currentPlayer);
+                        if (winningTokens) {
+                            printBoard(winningTokens);
+                            stream.write(chalk.blue(`AI wins!\r\n`));
+                            return false;
+                        } else if (checkTie()) {
+                            printBoard();
+                            stream.write(chalk.yellow('It\'s a tie!\r\n'));
+                            return false;
+                        } else {
+                            currentPlayer = 3 - currentPlayer;
+                        }
+                    }
 
-            printBoard([], nextMove);
+                }
+            } else if (input === 'm') {
+                hintForPlayer();
+            } else if (input === 'h') {
+
+                var tBoard = JSON.parse(JSON.stringify(board));
+                var col = selector
+
+                for (let row = rows - 1; row >= 0; row--) {
+                    if (tBoard[row][col] === 0) {
+                        tBoard[row][col] = 3 - currentPlayer
+
+                        break;
+                    }
+                }
+
+                var [nextMove, _] = minimax(tBoard, 4, -Infinity, Infinity, true);
+
+                printBoard([], nextMove);
+
+            }
+            if (input !== 'h') printBoard();
+            return {
+                selector: selector,
+                board: board,
+                currentPlayer: currentPlayer,
+                rows: rows,
+                columns: columns
+            }
 
         }
-        printBoard();
-    });
+
+    }
 
     function hintForPlayer() {
         const depth = 4;
@@ -1263,18 +1370,19 @@ function startConnectFourGame(stream) {
         if (col !== null) {
             dropToken(col);
             const winningTokens = checkWin(currentPlayer);
-            if (winningTokens) {
-                printBoard(winningTokens);
-                stream.write(chalk.blue(`AI wins!\r\n`));
-                stream.end();
-            } else if (checkTie()) {
-                printBoard();
-                stream.write(chalk.yellow('It\'s a tie!\r\n'));
-                stream.end();
-            } else {
-                currentPlayer = 3 - currentPlayer;
-
-            }
+            if (!isCommand) {
+                if (winningTokens) {
+                    printBoard(winningTokens);
+                    stream.write(chalk.blue(`AI wins!\r\n`));
+                    stream.end();
+                } else if (checkTie()) {
+                    printBoard();
+                    stream.write(chalk.yellow('It\'s a tie!\r\n'));
+                    stream.end();
+                } else {
+                    currentPlayer = 3 - currentPlayer;
+                }
+            } 
         }
     }
 
@@ -2185,7 +2293,7 @@ Options:
                         if (cmd.length + 2 > lenght) { lenght = cmd.length + 2 }
                     })
                     let commandStats = Object.keys(user.stats.commands).sort((a, b) => user.stats.commands[b] - user.stats.commands[a]).map(cmd => {
-                        return `${cmd}${' '.repeat(lenght -cmd.length)}${user.stats.commands[cmd]} times`
+                        return `${cmd}${' '.repeat(lenght - cmd.length)}${user.stats.commands[cmd]} times`
                     }).join('\r\n');
 
                     output = `Command statistics for ${user.username}: \r\n`
@@ -2320,8 +2428,22 @@ Last login: ${userDB.stats.lastLogin.toLocaleString()}`;
 
                 return false;
             }
+        },
+        {
+            name: "connect4",
+            description: "Play connect 4 game",
+            root: false,
+            execute: function (input, currentUser, shell) {
+                mode = "connect4";
+                shell.write('\x1B[2K');
+                let game = startConnectFourGame(shell, true)
+
+                tempGame["connect4"] = game;
+
+                return false;
+            }
         }
-    ]
+    ];
 
     client.on('authentication', (ctx) => {
         authCtx = ctx;
@@ -2497,7 +2619,6 @@ Last login: ${userDB.stats.lastLogin.toLocaleString()}`;
                         console.log('Data:', data.toString());
                         console.log(data);
 
-                        console.log(mode)
                         if (mode === "rockpaperscissors") {
 
                             let result = startRockPaperScissorsGame(shell, true, { input: data.toString(), ...tempGame?.rps })
@@ -2533,6 +2654,19 @@ Last login: ${userDB.stats.lastLogin.toLocaleString()}`;
                             }
 
                             tempGame["2048"] = result;
+                        } else if (mode === "connect4") {
+                            let result = startConnectFourGame(shell, true, { input: data.toString(), ...tempGame?.connect4 })
+
+                            if (!result) {
+                                mode = "normal";
+                                shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} `);
+                                tempGame.connect4 = null;
+                                return;
+                            }
+
+                            tempGame.connect4 = result;
+
+
                         } else {
 
                             var printableChars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!@#$%^&*()_+-=[]{}|;:,.<>?/\\\'"`~ \t\n\r';
@@ -2785,7 +2919,9 @@ Last login: ${userDB.stats.lastLogin.toLocaleString()}`;
                         let output = '';
                         hystoryPosition = 1;
                         try {
+                           if (input !== "") {
                             fileSystemFunctions.addToBashHistory(userDB, input);
+                            }
                         } catch (error) {
                             console.log(error)
                         }
