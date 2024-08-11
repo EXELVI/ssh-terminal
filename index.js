@@ -223,7 +223,7 @@ function startRockPaperScissorsGame(stream, isCommand = false, options = {}) {
 
 
     function printBoard() {
-        if (!isCommand)stream.write('\x1Bc');
+        if (!isCommand) stream.write('\x1Bc');
         else {
             stream.write('\x1B[2J\x1B[0;0f');
 
@@ -361,7 +361,18 @@ function startRockPaperScissorsGame(stream, isCommand = false, options = {}) {
 
 }
 
-function startTicTacToeGame(stream) {
+/**
+ * 
+ * @param {*} options
+ * @param {Boolean} isCommand
+ * @param {object} options
+ * @param {string} options.input
+ * @param {number} options.selectorRow
+ * @param {number} options.selectorCol
+ * @param {Array<Array<string>>} options.board 
+ * @param {string} options.currentPlayer 
+ */
+function startTicTacToeGame(stream, isCommand = false, options = {}) {
     let board = [
         [' ', ' ', ' '],
         [' ', ' ', ' '],
@@ -405,6 +416,22 @@ function startTicTacToeGame(stream) {
     let currentPlayer = 'X';
     let selectorRow = 0;
     let selectorCol = 0;
+
+    if (isCommand) {
+        if (options.selectorRow) {
+            selectorRow = parseInt(options.selectorRow);
+        }
+        if (options.selectorCol) {
+            selectorCol = parseInt(options.selectorCol);
+        }
+        if (options.board) {
+            board = options.board;
+        }
+        if (options.currentPlayer) {
+            currentPlayer = options.currentPlayer;
+        }
+    }
+
 
     function aiMove() {
         let bestScore = -Infinity;
@@ -461,7 +488,11 @@ function startTicTacToeGame(stream) {
 
 
     function printBoard(invalidMove = false) {
-        stream.write('\x1Bc');
+        if (!isCommand) stream.write('\x1Bc');
+        else {
+            stream.write('\x1B[2J\x1B[0;0f');
+        }
+
 
         for (let i = 0; i < 3; i++) {
             for (let row = 0; row < 8; row++) {
@@ -522,56 +553,153 @@ function startTicTacToeGame(stream) {
         return board.flat().every(cell => cell !== ' ');
     }
 
-    stream.on('data', (data) => {
-        const input = data.toString();
-        if (input === '\x03') {
-            stream.end();
-        } else if (input === 'w' || input === '\x1B[A') {
-            selectorRow = Math.max(selectorRow - 1, 0);
-        } else if (input === 'a' || input === '\x1B[D') {
-            selectorCol = Math.max(selectorCol - 1, 0);
-        } else if (input === 's' || input === '\x1B[B') {
-            selectorRow = Math.min(selectorRow + 1, 2);
-        } else if (input === 'd' || input === '\x1B[C') {
-            selectorCol = Math.min(selectorCol + 1, 2);
+    if (!isCommand) {
+        stream.on('data', (data) => {
+            const input = data.toString();
+            if (input === '\x03') {
+                stream.end();
+            } else if (input === 'w' || input === '\x1B[A') {
+                selectorRow = Math.max(selectorRow - 1, 0);
+            } else if (input === 'a' || input === '\x1B[D') {
+                selectorCol = Math.max(selectorCol - 1, 0);
+            } else if (input === 's' || input === '\x1B[B') {
+                selectorRow = Math.min(selectorRow + 1, 2);
+            } else if (input === 'd' || input === '\x1B[C') {
+                selectorCol = Math.min(selectorCol + 1, 2);
 
-        } else if (input === ' ' || input === '\r') {
-            if (board[selectorRow][selectorCol] === ' ') {
-                board[selectorRow][selectorCol] = currentPlayer;
-                if (checkWin(currentPlayer)) {
-                    printBoard();
-                    stream.write(chalk.green(`${currentPlayer} wins!\r\n`));
-                    stream.end();
-                } else if (checkTie()) {
-                    printBoard();
-                    stream.write(chalk.yellow('It\'s a tie!\r\n'));
-                    stream.end();
-                } else {
-                    currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
-                }
-                aiMove();
-                if (checkWin('O')) {
-                    printBoard();
-                    stream.write(chalk.blue('AI wins!\r\n'));
-                    stream.end();
-                } else if (checkTie()) {
-                    printBoard();
-                    stream.write(chalk.yellow('It\'s a tie!\r\n'));
-                    stream.end();
-                } else {
-                    currentPlayer = 'X';
-                }
+            } else if (input === ' ' || input === '\r') {
+                if (board[selectorRow][selectorCol] === ' ') {
+                    board[selectorRow][selectorCol] = currentPlayer;
+                    if (checkWin(currentPlayer)) {
+                        printBoard();
+                        stream.write(chalk.green(`${currentPlayer} wins!\r\n`));
+                        stream.end();
+                    } else if (checkTie()) {
+                        printBoard();
+                        stream.write(chalk.yellow('It\'s a tie!\r\n'));
+                        stream.end();
+                    } else {
+                        currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+                    }
+                    aiMove();
+                    if (checkWin('O')) {
+                        printBoard();
+                        stream.write(chalk.blue('AI wins!\r\n'));
+                        stream.end();
+                    } else if (checkTie()) {
+                        printBoard();
+                        stream.write(chalk.yellow('It\'s a tie!\r\n'));
+                        stream.end();
+                    } else {
+                        currentPlayer = 'X';
+                    }
 
-                printBoard();
-            } else {
-                printBoard(true);
-                setTimeout(() => printBoard(), 200);
+                    printBoard();
+                } else {
+                    printBoard(true);
+                    setTimeout(() => printBoard(), 200);
+                }
             }
+            if (input !== ' ' && input !== '\r') {
+                printBoard();
+            }
+        });
+    } else {
+        if (options.input) {
+            let input = options.input.toString();
+            if (input === '\x03') {
+                return false;
+            } else if (input === 'w' || input === '\x1B[A') {
+                selectorRow = Math.max(selectorRow - 1, 0);
+                printBoard();
+                return {
+                    selectorRow: selectorRow,
+                    selectorCol: selectorCol,
+                    board: board,
+                    currentPlayer: currentPlayer
+                }
+            } else if (input === 'a' || input === '\x1B[D') {
+                selectorCol = Math.max(selectorCol - 1, 0);
+                printBoard();
+                return {
+                    selectorRow: selectorRow,
+                    selectorCol: selectorCol,
+                    board: board,
+                    currentPlayer: currentPlayer
+                }
+            } else if (input === 's' || input === '\x1B[B') {
+                selectorRow = Math.min(selectorRow + 1, 2);
+                printBoard();
+                return {
+                    selectorRow: selectorRow,
+                    selectorCol: selectorCol,
+                    board: board,
+                    currentPlayer: currentPlayer
+                }
+            } else if (input === 'd' || input === '\x1B[C') {
+                selectorCol = Math.min(selectorCol + 1, 2);
+                printBoard();
+                return {
+                    selectorRow: selectorRow,
+                    selectorCol: selectorCol,
+                    board: board,
+                    currentPlayer: currentPlayer
+                }
+            } else if (input === ' ' || input === '\r') {
+                if (board[selectorRow][selectorCol] === ' ') {
+                    board[selectorRow][selectorCol] = currentPlayer;
+                    if (checkWin(currentPlayer)) {
+                        printBoard();
+                        stream.write(chalk.green(`${currentPlayer} wins!\r\n`));
+                        
+                        return false
+                    } else if (checkTie()) {
+                        printBoard();
+                        stream.write(chalk.yellow('It\'s a tie!\r\n'));
+                        return false
+                    } else {
+                        currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+                    }
+                    aiMove();
+                    if (checkWin('O')) {
+                        printBoard();
+                        stream.write(chalk.blue('AI wins!\r\n'));
+                        return false
+                    } else if (checkTie()) {
+                        printBoard();
+                        stream.write(chalk.yellow('It\'s a tie!\r\n'));
+                        return false
+                    } else {
+                        currentPlayer = 'X';
+                    }
+
+                    printBoard();
+
+                    return {
+                        selectorRow: selectorRow,
+                        selectorCol: selectorCol,
+                        board: board,
+                        currentPlayer: currentPlayer
+                    }
+
+                    
+                } else {
+                    printBoard(true);
+                    setTimeout(() => printBoard(), 200);
+                    return {
+                        selectorRow: selectorRow,
+                        selectorCol: selectorCol,
+                        board: board,
+                        currentPlayer: currentPlayer
+                    }
+                }
+            }
+            if (input !== ' ' && input !== '\r') {
+                printBoard();
+            }
+
         }
-        if (input !== ' ' && input !== '\r') {
-            printBoard();
-        }
-    });
+    }
 
     printBoard();
 }
@@ -2076,7 +2204,19 @@ Last login: ${userDB.stats.lastLogin.toLocaleString()}`;
                 mode = "rockpaperscissors";
                 shell.write('\x1B[2K');
                 startRockPaperScissorsGame(shell, true)
-              
+
+                return false;
+            }
+        },
+        {
+            name: "tictactoe",
+            description: "Play tic tac toe",
+            root: false,
+            execute: function (input, currentUser, shell) {
+                mode = "tictactoe";
+                shell.write('\x1B[2K');
+                startTicTacToeGame(shell, true)
+
                 return false;
             }
         }
@@ -2258,17 +2398,29 @@ Last login: ${userDB.stats.lastLogin.toLocaleString()}`;
 
                         console.log(mode)
                         if (mode === "rockpaperscissors") {
-                          
+
                             let result = startRockPaperScissorsGame(shell, true, { input: data.toString(), ...tempGame?.rps })
 
                             if (!result) {
                                 mode = "normal";
                                 shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} `);
+                                tempGame.rps = null;
                                 return;
                             }
 
                             tempGame.rps = result;
 
+                        } else if (mode === "tictactoe") {
+                            let result = startTicTacToeGame(shell, true, { input: data.toString(), ...tempGame?.ttt })
+
+                            if (!result) {
+                                mode = "normal";
+                                shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} `);
+                                tempGame.ttt = null;
+                                return;
+                            }
+
+                            tempGame.ttt = result;
                         } else {
 
                             var printableChars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!@#$%^&*()_+-=[]{}|;:,.<>?/\\\'"`~ \t\n\r';
