@@ -72,12 +72,13 @@
           "date": 4,
           "clear": 5,
           "stats": 105,
-          "rm": 2
+          "rm": 2,
+          "rockpaperscissors": 17
         },
         "files": 9,
         "directories": 0,
         "sudo": 6,
-        "uptime": 3392983,
+        "uptime": 3395054,
         "lastLogin": "2024-08-04T19:53:56.190Z"
       }
     },
@@ -347,10 +348,10 @@
                 ".bash_history": {
                   "type": "file",
                   "owner": 0,
-                  "lastModified": "2024-08-10T19:55:09.587Z",
+                  "lastModified": "2024-08-11T09:27:25.807Z",
                   "created": "2024-01-01T00:00:00.000Z",
-                  "content": "help\nhelp\nhelp\nhelp\nhelp\nls\nstats\nstats\nstats\n\nstats\nstats\nstats\nstats\nstats\nhelp\na\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nclear\n\n\n\n\n\n\n\n\n\nclear\ncurl\n\n\n\n\n\nclear\nstats\n\n\n\na\nv\na\n\na\n\na\n\n\n\n\n\n\n\n\n\n\nhelp\nstats\n\nstats\n\nstats\nstats\n\n\n\n\n\na\na\na\na\ncat \n\n\n\na\na\na\na\na\na\na\ntest\n\nstats\nstats\nstats\nstats\nstats\nstats\nstats\nstats\nstats\nstats\nstats\nstats\nstats -c\nstats -c\nstats\nstats -c\nstats\nstats\nstats a\nstats arewrqwerq\nstats root\nstats\nstats root\nstats r\nstats -c\nstats -c\nstats -c exelvi\nstats -a\nstats -a a\nstats -c\nstats\nstats -a \nstats -a aa\nstats -a cp\nstats -a root root\nstats -a root root\nstats -c\nstats -c\nstats -c\nstats -c\nstats --commands\nstats\nstats -c\nstats -c\nstats\nstats -c\nstats\nstats\nstats exelvi\nstats exelv\nstats\nstats\nstats\nstats root\nstats root\nstats\nstats root\nstats root\nstats\nstats -a\nstats\nstats -a\nstats -all\nstats -all\u001b[D\u001b[D\nstats --all\nstats -c\nstats -c\nstats\nstats\nstats -a\nstats\nstats -a\nstats -c\nstats -all\nstats -c\nstats\nstats\n\nstats\nstatsstats\nstats\nstats\nstats\nstats -a\nstats -aòll\nstats -aòll\u001b[D\u001b[D\nstats -all\nstats -c\nstats -c\nstats -c\nstats -c\nstats -c\nstats -c\nstats -c\nhelp\nadduser seimarso\nhelp\ncat \ncat file.txt\nls\ncat test.txt\necho ciao\necho ciao > opwekpokp\nl\nls\ncat opwekpokp\ncat opwekpokp\ncat opwekpokp\ncat opwekpokp\ncat opwekpokp\n\necho ciao > opwekpokpopwekpokp\necho ciao > opwekpokp\nls\ncat opwekpokp\ncat opwekpokp\ncat opwekpokp\ncd \ncd ..\nls\ncd ..\ncd ..\ncd home\ncd \ncd\ncd\ncd ..\ncd ..\ncd home\nrm naveen\nòs\nls\nrm max\nls\nhelp\nneofetch\nhelp\nhelp\na\nb\nc\nd\ne\nhelp\ncat\ncat .bash_history\nls\ncd ..\nls\ncd ..\nls\ncd home\nsu\nexit\nexit\n",
-                  "size": 1562
+                  "content": "help\nhelp\nhelp\nhelp\nhelp\nls\nstats\nstats\nstats\n\nstats\nstats\nstats\nstats\nstats\nhelp\na\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nclear\n\n\n\n\n\n\n\n\n\nclear\ncurl\n\n\n\n\n\nclear\nstats\n\n\n\na\nv\na\n\na\n\na\n\n\n\n\n\n\n\n\n\n\nhelp\nstats\n\nstats\n\nstats\nstats\n\n\n\n\n\na\na\na\na\ncat \n\n\n\na\na\na\na\na\na\na\ntest\n\nstats\nstats\nstats\nstats\nstats\nstats\nstats\nstats\nstats\nstats\nstats\nstats\nstats -c\nstats -c\nstats\nstats -c\nstats\nstats\nstats a\nstats arewrqwerq\nstats root\nstats\nstats root\nstats r\nstats -c\nstats -c\nstats -c exelvi\nstats -a\nstats -a a\nstats -c\nstats\nstats -a \nstats -a aa\nstats -a cp\nstats -a root root\nstats -a root root\nstats -c\nstats -c\nstats -c\nstats -c\nstats --commands\nstats\nstats -c\nstats -c\nstats\nstats -c\nstats\nstats\nstats exelvi\nstats exelv\nstats\nstats\nstats\nstats root\nstats root\nstats\nstats root\nstats root\nstats\nstats -a\nstats\nstats -a\nstats -all\nstats -all\u001b[D\u001b[D\nstats --all\nstats -c\nstats -c\nstats\nstats\nstats -a\nstats\nstats -a\nstats -c\nstats -all\nstats -c\nstats\nstats\n\nstats\nstatsstats\nstats\nstats\nstats\nstats -a\nstats -aòll\nstats -aòll\u001b[D\u001b[D\nstats -all\nstats -c\nstats -c\nstats -c\nstats -c\nstats -c\nstats -c\nstats -c\nhelp\nadduser seimarso\nhelp\ncat \ncat file.txt\nls\ncat test.txt\necho ciao\necho ciao > opwekpokp\nl\nls\ncat opwekpokp\ncat opwekpokp\ncat opwekpokp\ncat opwekpokp\ncat opwekpokp\n\necho ciao > opwekpokpopwekpokp\necho ciao > opwekpokp\nls\ncat opwekpokp\ncat opwekpokp\ncat opwekpokp\ncd \ncd ..\nls\ncd ..\ncd ..\ncd home\ncd \ncd\ncd\ncd ..\ncd ..\ncd home\nrm naveen\nòs\nls\nrm max\nls\nhelp\nneofetch\nhelp\nhelp\na\nb\nc\nd\ne\nhelp\ncat\ncat .bash_history\nls\ncd ..\nls\ncd ..\nls\ncd home\nsu\nexit\nexit\nrockpaperscissors\nrockpaperscissors\nrockpaperscissors\nr\nrockpaperscissors\n\nrockpaperscissors\nrockpaperscissors\nrockpaperscissors\nrockpaperscissors\nrockpaperscissors\nrockpaperscissors\nrockpaperscissors\nrockpaperscissors\nrockpaperscissors\nrockpaperscissors\nrockpaperscissors\nrockpaperscissors\nrockpaperscissors\n",
+                  "size": 1871
                 },
                 ".bashrc": {
                   "type": "file",

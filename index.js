@@ -191,15 +191,27 @@ if (hostKey) {
     console.log('Host key not found, generating a new one');
     fs.writeFileSync('host.key', key.private);
 }
-
-function startRockPaperScissorsGame(stream) {
+/**
+ * 
+ * @param {ssh2.ShellOptions} options
+ * @param {Boolean} isCommand 
+ * @param {object} options 
+ * @param {string} options.input
+ * @param {string} options.selector
+ */
+function startRockPaperScissorsGame(stream, isCommand = false, options = {}) {
     const choices = ['rock', 'paper', 'scissors'];
 
     let playerChoice = null;
     let selector = 0;
     let aiChoice = null;
-    let awaitingConfirm = false; 
+    let awaitingConfirm = false;
 
+    if (isCommand) {
+        if (options.selector) {
+            selector = parseInt(options.selector);
+        }
+    }
 
     function colorChoice(choice) {
         switch (choice) {
@@ -211,7 +223,11 @@ function startRockPaperScissorsGame(stream) {
 
 
     function printBoard() {
-        stream.write('\x1Bc');
+        if (!isCommand)stream.write('\x1Bc');
+        else {
+            stream.write('\x1B[2J\x1B[0;0f');
+
+        }
         stream.write('Rock Paper Scissors\r\n');
         stream.write('Use a/d or arrow keys to select, space to confirm\r\n');
         stream.write('\r\n');
@@ -225,57 +241,101 @@ function startRockPaperScissorsGame(stream) {
 
     let inp = "";
 
-    stream.on('data', (data) => {
-        const input = data.toString();
-        if (awaitingConfirm) {
-            if (input == "\x03") {
-                stream.end();
-            } else if (input === '\r') {
-                if (inp === 'y') {
-                    playerChoice = null;
-                    aiChoice = null;
-                    awaitingConfirm = false;
-                    stream.write('\x1Bc');
-                    printBoard();
-                } else if (inp === 'n') {
-                    stream.write('\r\n');
+    if (!isCommand) {
+        stream.on('data', (data) => {
+            const input = data.toString();
+            if (awaitingConfirm) {
+                if (input == "\x03") {
                     stream.end();
+                } else if (input === '\r') {
+                    if (inp === 'y') {
+                        playerChoice = null;
+                        aiChoice = null;
+                        awaitingConfirm = false;
+                        stream.write('\x1Bc');
+                        printBoard();
+                    } else if (inp === 'n') {
+                        stream.write('\r\n');
+                        stream.end();
+                    } else {
+                        stream.write('\x1Bc');
+                        stream.write('Do you want to play again? (y/n) ');
+                        inp = "";
+                    }
+                } if (input == "\u007F") {
+                    if (inp.length > 0) {
+                        inp = inp.slice(0, -1);
+                        stream.write('\b \b');
+                    }
+
                 } else {
-                    stream.write('\x1Bc');
-                    stream.write('Do you want to play again? (y/n) ');
-                    inp = "";
+                    let allowToWrite = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!@#$%^&*()_+-=[]{}|;':,.<>/?".split("");
+                    if (allowToWrite.includes(input)) {
+                        inp += input;
+                        stream.write(input);
+                    }
                 }
-            } if (input == "\u007F") {
-                if (inp.length > 0) {
-                    inp = inp.slice(0, -1);
-                    stream.write('\b \b');
-                }
+
 
             } else {
-                let allowToWrite = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!@#$%^&*()_+-=[]{}|;':,.<>/?".split("");
-                if (allowToWrite.includes(input)) {
-                    inp += input;
-                    stream.write(input);
+                if (input === '\x03') {
+                    stream.end();
+                } else if (input === 'a' || input === '\x1B[D' || input === 'w' || input === '\x1B[A') {
+                    selector = Math.max(selector - 1, 0);
+                    printBoard();
+                } else if (input === 'd' || input === '\x1B[C' || input === 's' || input === '\x1B[B') {
+                    selector = Math.min(selector + 1, choices.length - 1);
+                    printBoard();
+                }
+                else if (input === ' ' || input === '\r') {
+                    if (playerChoice === null) {
+                        playerChoice = choices[selector];
+                        aiMove();
+                        awaitingConfirm = true;
+                        stream.write('\x1Bc');
+                        stream.write(`You chose: ${colorChoice(playerChoice)}\r\n`);
+                        stream.write(`AI chose: ${colorChoice(aiChoice)}\r\n`);
+                        let result = '';
+                        if (playerChoice === aiChoice) {
+                            result = chalk.yellow('It\'s a tie!');
+                        } else if (playerChoice === 'rock' && aiChoice === 'scissors' ||
+                            playerChoice === 'paper' && aiChoice === 'rock' ||
+                            playerChoice === 'scissors' && aiChoice === 'paper') {
+                            result = chalk.green('You win!');
+                        } else {
+                            result = chalk.red('AI wins!');
+                        }
+                        stream.write(result + '\r\n');
+                        stream.write('Do you want to play again? (y/n) ');
+                        inp = "";
+
+                    }
                 }
             }
-
-
-        } else {
+        });
+    } else {
+        if (options.input) {
+            let input = options.input.toString();
             if (input === '\x03') {
-                stream.end();
+                return false;
             } else if (input === 'a' || input === '\x1B[D' || input === 'w' || input === '\x1B[A') {
                 selector = Math.max(selector - 1, 0);
                 printBoard();
+                return {
+                    selector: selector
+                }
             } else if (input === 'd' || input === '\x1B[C' || input === 's' || input === '\x1B[B') {
                 selector = Math.min(selector + 1, choices.length - 1);
                 printBoard();
+                return {
+                    selector: selector
+                }
             }
             else if (input === ' ' || input === '\r') {
                 if (playerChoice === null) {
                     playerChoice = choices[selector];
                     aiMove();
-                    awaitingConfirm = true;
-                    stream.write('\x1Bc');
+                    stream.write('\r\n');
                     stream.write(`You chose: ${colorChoice(playerChoice)}\r\n`);
                     stream.write(`AI chose: ${colorChoice(aiChoice)}\r\n`);
                     let result = '';
@@ -289,13 +349,12 @@ function startRockPaperScissorsGame(stream) {
                         result = chalk.red('AI wins!');
                     }
                     stream.write(result + '\r\n');
-                    stream.write('Do you want to play again? (y/n) ');
-                    inp = "";
+                    return false;
 
                 }
             }
         }
-    });
+    }
 
 
     printBoard();
@@ -1188,6 +1247,9 @@ const server = new Server({
      * @property {number} stats.sudo
      * @property {number} stats.uptime
      */
+
+    let tempGame = {}
+
     var start = new Date()
     var userDB = {
         username: '',
@@ -2006,6 +2068,17 @@ Last login: ${userDB.stats.lastLogin.toLocaleString()}`;
                 }
                 return '';
             }
+        }, {
+            name: "rockpaperscissors",
+            description: "Play rock paper scissors",
+            root: false,
+            execute: function (input, currentUser, shell) {
+                mode = "rockpaperscissors";
+                shell.write('\x1B[2K');
+                startRockPaperScissorsGame(shell, true)
+              
+                return false;
+            }
         }
     ]
 
@@ -2183,247 +2256,263 @@ Last login: ${userDB.stats.lastLogin.toLocaleString()}`;
                         console.log('Data:', data.toString());
                         console.log(data);
 
-                        var printableChars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!@#$%^&*()_+-=[]{}|;:,.<>?/\\\'"`~ \t\n\r';
-                        if (!mode.startsWith("passwd") && !mode.startsWith("supassword") && !mode.startsWith("sudo")) {
-                            if (printableChars.includes(data.toString())) {
-                                shell.write(data);
+                        console.log(mode)
+                        if (mode === "rockpaperscissors") {
+                          
+                            let result = startRockPaperScissorsGame(shell, true, { input: data.toString(), ...tempGame?.rps })
+
+                            if (!result) {
+                                mode = "normal";
+                                shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} `);
+                                return;
                             }
-                        }
 
-                        if (data.toString() === '\r') {
-                            if (mode === "waiting") return;
-                            if (mode.startsWith("supassword-")) {
-                                let user = mode.split("-")[1]
-                                let dbuser = users.find(u => u.username === user);
+                            tempGame.rps = result;
 
-                                if (dbuser.password === input) {
-                                    userDB = dbuser;
-                                    if (userDB.uid != 0) {
-                                        lastUser = userDB.uid;
-                                    }
-                                    shell.write('\x1B[2K\r');
-                                    shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} `);
-                                    mode = "normal";
-                                    input = '';
-                                } else {
-                                    tries++;
-                                    if (tries > 2) {
-                                        shell.write('su: Authentication failure\r\n');
+                        } else {
+
+                            var printableChars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!@#$%^&*()_+-=[]{}|;:,.<>?/\\\'"`~ \t\n\r';
+                            if (!mode.startsWith("passwd") && !mode.startsWith("supassword") && !mode.startsWith("sudo")) {
+                                if (printableChars.includes(data.toString())) {
+                                    shell.write(data);
+                                }
+                            }
+
+                            if (data.toString() === '\r') {
+                                if (mode === "waiting") return;
+                                if (mode.startsWith("supassword-")) {
+                                    let user = mode.split("-")[1]
+                                    let dbuser = users.find(u => u.username === user);
+
+                                    if (dbuser.password === input) {
+                                        userDB = dbuser;
+                                        if (userDB.uid != 0) {
+                                            lastUser = userDB.uid;
+                                        }
+                                        shell.write('\x1B[2K\r');
                                         shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} `);
                                         mode = "normal";
                                         input = '';
-                                        return;
-                                    }
-                                    shell.write('\x1B[2K\r');
-                                    shell.write('Wrong password\r\nPassword: ');
-                                    input = '';
-                                    return;
-
-                                }
-                            } else if (mode.startsWith("passwd-")) {
-                                const passwdMode = mode.split("-")[1]
-                                const user = mode.split("-")[2]
-
-                                if (passwdMode == "c") {
-                                    if (users.find(u => u.username === user).password === input) {
-                                        mode = "passwd-n-" + user;
-                                        shell.write('\x1B[2K\r');
-                                        shell.write('New password: ');
-                                        input = '';
-                                        return;
                                     } else {
                                         tries++;
                                         if (tries > 2) {
-                                            shell.write('passwd: Authentication failure\r\n');
+                                            shell.write('su: Authentication failure\r\n');
                                             shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} `);
                                             mode = "normal";
                                             input = '';
                                             return;
                                         }
                                         shell.write('\x1B[2K\r');
-                                        shell.write('Wrong password\r\nCurrent password: ');
+                                        shell.write('Wrong password\r\nPassword: ');
                                         input = '';
                                         return;
+
                                     }
-                                } else if (passwdMode == "n") {
-                                    mode = "passwd-cc-" + user;
-                                    input = '';
-                                    passwordTemp = input;
-                                    shell.write('\x1B[2K\r');
-                                    shell.write('Confirm password: ');
-                                } else if (passwdMode == "cc") {
-                                    if (input === passwordTemp) {
-                                        users.find(u => u.username === user).password = input;
-                                        shell.write('\r\n');
-                                        shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} `);
-                                        mode = "normal";
+                                } else if (mode.startsWith("passwd-")) {
+                                    const passwdMode = mode.split("-")[1]
+                                    const user = mode.split("-")[2]
+
+                                    if (passwdMode == "c") {
+                                        if (users.find(u => u.username === user).password === input) {
+                                            mode = "passwd-n-" + user;
+                                            shell.write('\x1B[2K\r');
+                                            shell.write('New password: ');
+                                            input = '';
+                                            return;
+                                        } else {
+                                            tries++;
+                                            if (tries > 2) {
+                                                shell.write('passwd: Authentication failure\r\n');
+                                                shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} `);
+                                                mode = "normal";
+                                                input = '';
+                                                return;
+                                            }
+                                            shell.write('\x1B[2K\r');
+                                            shell.write('Wrong password\r\nCurrent password: ');
+                                            input = '';
+                                            return;
+                                        }
+                                    } else if (passwdMode == "n") {
+                                        mode = "passwd-cc-" + user;
                                         input = '';
-                                    } else {
-                                        shell.write('\r\npasswd: Authentication token manipulation error\r\npasswd: password unchanged\r\n');
-                                        shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} `);
-                                        mode = "normal";
-                                        input = '';
-                                        return;
+                                        passwordTemp = input;
+                                        shell.write('\x1B[2K\r');
+                                        shell.write('Confirm password: ');
+                                    } else if (passwdMode == "cc") {
+                                        if (input === passwordTemp) {
+                                            users.find(u => u.username === user).password = input;
+                                            shell.write('\r\n');
+                                            shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} `);
+                                            mode = "normal";
+                                            input = '';
+                                        } else {
+                                            shell.write('\r\npasswd: Authentication token manipulation error\r\npasswd: password unchanged\r\n');
+                                            shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} `);
+                                            mode = "normal";
+                                            input = '';
+                                            return;
+                                        }
                                     }
-                                }
-                            } else if (mode.startsWith("sudo-")) {
-                                let user = userDB.uid
-                                let inputC = mode.split("sudo-")[1]
-                                if (users.find(u => u.uid === user)?.password === input) {
-                                    sudoLogin = true;
-                                    mode = "normal";
-                                    tries = 0;
-                                    shell.write('\x1B[2K\r');
-                                    handleCommand("sudo " + inputC, false);
-                                } else {
-                                    tries++;
-                                    if (tries > 2) {
-                                        shell.write('sudo: Authentication failure\r\n');
-                                        shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} `);
+                                } else if (mode.startsWith("sudo-")) {
+                                    let user = userDB.uid
+                                    let inputC = mode.split("sudo-")[1]
+                                    if (users.find(u => u.uid === user)?.password === input) {
+                                        sudoLogin = true;
                                         mode = "normal";
-                                        input = '';
                                         tries = 0;
+                                        shell.write('\x1B[2K\r');
+                                        handleCommand("sudo " + inputC, false);
+                                    } else {
+                                        tries++;
+                                        if (tries > 2) {
+                                            shell.write('sudo: Authentication failure\r\n');
+                                            shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} `);
+                                            mode = "normal";
+                                            input = '';
+                                            tries = 0;
+                                            return;
+                                        }
+                                        shell.write('\x1B[2K\r');
+                                        shell.write('Wrong password\r\nPassword: ');
+                                        input = '';
                                         return;
                                     }
-                                    shell.write('\x1B[2K\r');
-                                    shell.write('Wrong password\r\nPassword: ');
-                                    input = '';
-                                    return;
-                                }
 
-                            } else if (mode.startsWith("adduser-")) {
-                                let mod = mode.split("-")[1];
-                                let user = mode.split("-")[2];
+                                } else if (mode.startsWith("adduser-")) {
+                                    let mod = mode.split("-")[1];
+                                    let user = mode.split("-")[2];
 
-                                if (mod == "passn") {
-                                    mode = "adduser-passc-" + user;
-                                    input = '';
-                                    passwordTemp = input;
-                                    shell.write('\x1B[2K\r');
-                                    shell.write('Confirm password: ');
+                                    if (mod == "passn") {
+                                        mode = "adduser-passc-" + user;
+                                        input = '';
+                                        passwordTemp = input;
+                                        shell.write('\x1B[2K\r');
+                                        shell.write('Confirm password: ');
 
-                                } else if (mod == "passc") {
-                                    if (input === passwordTemp) {
-                                        users.find(u => u.username === user).password = input;
+                                    } else if (mod == "passc") {
+                                        if (input === passwordTemp) {
+                                            users.find(u => u.username === user).password = input;
+                                            shell.write('\r\n');
+                                            shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} `);
+                                            mode = "normal";
+                                            input = '';
+                                        } else {
+                                            shell.write('\r\nSorry, passwords do not match\r\n');
+                                            shell.write('passwd: Authentication token manipulation error\r\npasswd: password unchanged\r\n');
+                                            shell.write(`Try again [y/n]: `);
+                                            mode = "confirm-adduser-passn-" + user;
+                                            input = '';
+                                            return;
+
+                                        }
+                                    }
+                                } else if (mode.startsWith("confirm-")) {
+                                    let functionString = mode.split("confirm-")[1];
+
+                                    if (input == "y") {
+                                        shell.write('\r\n');
+                                        shell.write(`New password: `);
+                                        input = '';
+                                        mode = functionString;
+                                    } else {
                                         shell.write('\r\n');
                                         shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} `);
                                         mode = "normal";
                                         input = '';
-                                    } else {
-                                        shell.write('\r\nSorry, passwords do not match\r\n');
-                                        shell.write('passwd: Authentication token manipulation error\r\npasswd: password unchanged\r\n');
-                                        shell.write(`Try again [y/n]: `);
-                                        mode = "confirm-adduser-passn-" + user;
-                                        input = '';
-                                        return;
-
                                     }
-                                }
-                            } else if (mode.startsWith("confirm-")) {
-                                let functionString = mode.split("confirm-")[1];
-
-                                if (input == "y") {
-                                    shell.write('\r\n');
-                                    shell.write(`New password: `);
-                                    input = '';
-                                    mode = functionString;
                                 } else {
-                                    shell.write('\r\n');
-                                    shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} `);
-                                    mode = "normal";
+                                    handleCommand(input);
                                     input = '';
                                 }
-                            } else {
-                                handleCommand(input);
+
+
+                            } else if (data.toString() === '\u0003') {
+                                shell.write('^C');
+                                shell.write(`\r\n${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} `);
+
+                                mode = "normal";
                                 input = '';
-                            }
-
-
-                        } else if (data.toString() === '\u0003') {
-                            shell.write('^C');
-                            shell.write(`\r\n${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} `);
-
-                            mode = "normal";
-                            input = '';
-                        } else if (data.toString() === '\u007F') {
-                            if (input.length > 0) {
-                                input = input.slice(0, -1);
-                                if (!mode.startsWith("passwd") && !mode.startsWith("supassword") && !mode.startsWith("sudo")) shell.write('\b \b');
-                            }
-                        } else if (data.toString() === '\u0009') {
-                            if (mode == "normal") {
-                                if (first) {
-                                    tabMachPosition = 0;
-                                    tabMachCommandPosition = 0;
-                                    first = false;
-
-                                    hinput = input
-                                    command = hinput.split(' ')[0];
-                                    commandList = commands.map(function (command) {
-                                        return command.name;
-                                    });
-                                    matchingCommands = commandList.filter(function (commandName) {
-                                        return commandName.startsWith(command);
-                                    });
+                            } else if (data.toString() === '\u007F') {
+                                if (input.length > 0) {
+                                    input = input.slice(0, -1);
+                                    if (!mode.startsWith("passwd") && !mode.startsWith("supassword") && !mode.startsWith("sudo")) shell.write('\b \b');
                                 }
+                            } else if (data.toString() === '\u0009') {
+                                if (mode == "normal") {
+                                    if (first) {
+                                        tabMachPosition = 0;
+                                        tabMachCommandPosition = 0;
+                                        first = false;
 
-                                fileListing = navigateToPath(currentDir);
-                                fileNames = Object.keys(fileListing);
-                                matchingFiles = fileNames.filter(function (fileName) {
-                                    return fileName.startsWith(hinput.split(' ')[1] || '');
-                                });
+                                        hinput = input
+                                        command = hinput.split(' ')[0];
+                                        commandList = commands.map(function (command) {
+                                            return command.name;
+                                        });
+                                        matchingCommands = commandList.filter(function (commandName) {
+                                            return commandName.startsWith(command);
+                                        });
+                                    }
 
-                                if (matchingCommands.length === 1) {
-                                    if (matchingCommands[0] == command) {
-                                        const file = matchingFiles[tabMachPosition];
-                                        if (file) {
-                                            input = command + ' ' + file;
+                                    fileListing = navigateToPath(currentDir);
+                                    fileNames = Object.keys(fileListing);
+                                    matchingFiles = fileNames.filter(function (fileName) {
+                                        return fileName.startsWith(hinput.split(' ')[1] || '');
+                                    });
+
+                                    if (matchingCommands.length === 1) {
+                                        if (matchingCommands[0] == command) {
+                                            const file = matchingFiles[tabMachPosition];
+                                            if (file) {
+                                                input = command + ' ' + file;
+                                                shell.write('\x1B[2K\r');
+                                                shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} ${input}`);
+                                                tabMachPosition++;
+                                                if (tabMachPosition >= matchingFiles.length) {
+                                                    tabMachPosition = 0;
+                                                }
+                                            }
+                                        } else {
+                                            input = matchingCommands[0];
                                             shell.write('\x1B[2K\r');
                                             shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} ${input}`);
-                                            tabMachPosition++;
-                                            if (tabMachPosition >= matchingFiles.length) {
-                                                tabMachPosition = 0;
-                                            }
                                         }
-                                    } else {
-                                        input = matchingCommands[0];
+                                    } else if (matchingCommands.length > 1) {
+                                        input = matchingCommands[tabMachCommandPosition];
                                         shell.write('\x1B[2K\r');
                                         shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} ${input}`);
+                                        tabMachCommandPosition++;
+                                        if (tabMachCommandPosition >= matchingCommands.length) {
+                                            tabMachCommandPosition = 0;
+                                        }
                                     }
-                                } else if (matchingCommands.length > 1) {
-                                    input = matchingCommands[tabMachCommandPosition];
+
+                                }
+                            } else if (data.toString() === '\u001b[A') {
+                                let bashHistory = fileSystemFunctions.getBashHistory(userDB).split('\n');
+                                if (hystoryPosition < bashHistory.length) {
+                                    hystoryPosition++;
+                                    input = bashHistory[bashHistory.length - hystoryPosition];
                                     shell.write('\x1B[2K\r');
                                     shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} ${input}`);
-                                    tabMachCommandPosition++;
-                                    if (tabMachCommandPosition >= matchingCommands.length) {
-                                        tabMachCommandPosition = 0;
-                                    }
                                 }
+                            } else if (data.toString() === '\u001b[B') {
+                                let bashHistory = fileSystemFunctions.getBashHistory(userDB).split('\n');
+                                if (hystoryPosition > 1) {
+                                    hystoryPosition--;
+                                    input = bashHistory[bashHistory.length - hystoryPosition];
+                                    shell.write('\x1B[2K\r');
+                                    shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} ${input}`);
+                                }
+                            } else {
 
-                            }
-                        } else if (data.toString() === '\u001b[A') {
-                            let bashHistory = fileSystemFunctions.getBashHistory(userDB).split('\n');
-                            if (hystoryPosition < bashHistory.length) {
-                                hystoryPosition++;
-                                input = bashHistory[bashHistory.length - hystoryPosition];
-                                shell.write('\x1B[2K\r');
-                                shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} ${input}`);
-                            }
-                        } else if (data.toString() === '\u001b[B') {
-                            let bashHistory = fileSystemFunctions.getBashHistory(userDB).split('\n');
-                            if (hystoryPosition > 1) {
-                                hystoryPosition--;
-                                input = bashHistory[bashHistory.length - hystoryPosition];
-                                shell.write('\x1B[2K\r');
-                                shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} ${input}`);
-                            }
-                        } else {
+                                input += data;
 
-                            input += data;
-
-                            tabMachPosition = 0;
-                            tabMachCommandPosition = 0;
-                            first = true;
+                                tabMachPosition = 0;
+                                tabMachCommandPosition = 0;
+                                first = true;
+                            }
                         }
                     });
 
