@@ -651,7 +651,7 @@ function startTicTacToeGame(stream, isCommand = false, options = {}) {
                     if (checkWin(currentPlayer)) {
                         printBoard();
                         stream.write(chalk.green(`${currentPlayer} wins!\r\n`));
-                        
+
                         return false
                     } else if (checkTie()) {
                         printBoard();
@@ -682,7 +682,7 @@ function startTicTacToeGame(stream, isCommand = false, options = {}) {
                         currentPlayer: currentPlayer
                     }
 
-                    
+
                 } else {
                     printBoard(true);
                     setTimeout(() => printBoard(), 200);
@@ -705,11 +705,34 @@ function startTicTacToeGame(stream, isCommand = false, options = {}) {
 }
 
 
-
-function start2048Game(stream) {
-    const gridSize = 4;
+/**
+ * 
+ * @param {*} options
+ * @param {Boolean} isCommand
+ * @param {object} options
+ * @param {string} options.input
+ * @param {number} options.gridSize
+ * @param {Array<Array<number>>} options.grid
+ * @param {number} options.score
+ */
+function start2048Game(stream, isCommand = false, options = {}) {
+    let gridSize = 4;
     let grid = createGrid(gridSize);
     let score = 0;
+
+    if (isCommand) {
+        if (options.gridSize) {
+            gridSize = parseInt(options.gridSize);
+        }
+        if (options.grid) {
+            grid = options.grid;
+        }
+        if (options.score) {
+            score = parseInt(options.score);
+        }
+    }
+
+
 
     function createGrid(size) {
         let grid = [];
@@ -734,10 +757,9 @@ function start2048Game(stream) {
             grid[row][col] = Math.random() < 0.9 ? 2 : 4;
         }
     }
-
     function colorTile(val, txt = true) {
-        let text = val === 0 ? '   ' : val.toString().padStart(3);
-        if (!txt) text = '   ';
+        let text = val === 0 ? '    ' : val.toString().padStart(4, ' ');
+        if (!txt) text = '    ';
         switch (val) {
             case 2: return chalk.bgHex("eee4da").black(` ${text} `);
             case 4: return chalk.bgHex("ede0c8").black(` ${text} `);
@@ -750,20 +772,35 @@ function start2048Game(stream) {
             case 512: return chalk.bgHex("edc850").black(` ${text} `);
             case 1024: return chalk.bgHex("edc53f").black(` ${text} `);
             case 2048: return chalk.bgHex("edc22e").black(` ${text} `);
+            case 4096: return chalk.bgHex("3c3a32").white(` ${text} `);
+            case 8192: return chalk.bgHex("3c3a32").white(` ${text} `);
             default: return chalk.bgHex("cdc1b5").black(` ${text} `);
         }
     }
 
     function printGrid() {
         stream.write('\x1Bc');
-        stream.write(`Score: ${score}` + '\r\n');
+
+        const scoreStr = ` Score: ${score}`;
+        const scoreLine = chalk.bgHex("cdc1b5").black(`┌${'─'.repeat(scoreStr.length)}┐\r\n`);
+        const scoreContent = chalk.bgHex("cdc1b5").black(`│${scoreStr}│\r\n`);
+
+
+        stream.write(scoreLine + scoreContent);
+
+        stream.write(chalk.bgHex("cdc1b5").black(`├${'─'.repeat(scoreStr.length)}┴${'─'.repeat((gridSize * 6) - scoreStr.length - 1)}┐\r\n`));
 
         for (let r = 0; r < gridSize; r++) {
-            stream.write(grid[r].map(val => colorTile(val, false)).join('') + '\r\n');
-            stream.write(grid[r].map(val => colorTile(val)).join('') + '\r\n');
-            stream.write(grid[r].map(val => colorTile(val, false)).join('') + '\r\n');
+            stream.write(chalk.bgHex("cdc1b5").black('│') + grid[r].map(val => colorTile(val, false)).join('') + chalk.bgHex("cdc1b5").black('│\r\n'));
+            stream.write(chalk.bgHex("cdc1b5").black('│') + grid[r].map(val => colorTile(val)).join('') + chalk.bgHex("cdc1b5").black('│\r\n'));
+            stream.write(chalk.bgHex("cdc1b5").black('│') + grid[r].map(val => colorTile(val, false)).join('') + chalk.bgHex("cdc1b5").black('│\r\n'));
         }
+
+        stream.write(chalk.bgHex("cdc1b5").black(`└${'─'.repeat(gridSize * 6)}┘\r\n`));
+
+
     }
+
 
     function combineRowLeft(row) {
         let newRow = row.filter(val => val !== 0);
@@ -837,33 +874,79 @@ function start2048Game(stream) {
         return true;
     }
 
-    stream.on('data', (data) => {
-        const input = data.toString();
+    if (!isCommand) {
+        stream.on('data', (data) => {
+            const input = data.toString();
 
-        if (input === '\x03') {
-            stream.end();
-        } else if (input === 'w' || input === '\x1B[A') {
-            moveUp();
-        } else if (input === 'a' || input === '\x1B[D') {
-            moveLeft();
-        } else if (input === 's' || input === '\x1B[B') {
-            moveDown();
-        } else if (input === 'd' || input === '\x1B[C') {
-            moveRight();
-        }
+            if (input === '\x03') {
+                stream.end();
+            } else if (input === 'w' || input === '\x1B[A') {
+                moveUp();
+            } else if (input === 'a' || input === '\x1B[D') {
+                moveLeft();
+            } else if (input === 's' || input === '\x1B[B') {
+                moveDown();
+            } else if (input === 'd' || input === '\x1B[C') {
+                moveRight();
+            }
 
-        if (isGameOver()) {
-            printGrid();
-            stream.write('Game over!\r\n');
-            stream.end();
-        } else {
-            printGrid();
+            if (isGameOver()) {
+                printGrid();
+                stream.write('Game over!\r\n');
+                stream.end();
+            } else {
+                printGrid();
+            }
+        });
+    } else {
+        if (options.input) {
+            let input = options.input.toString();
+            if (input === '\x03') {
+                return false;
+            } else if (input === 'w' || input === '\x1B[A') {
+                moveUp();
+                printGrid();
+
+            } else if (input === 'a' || input === '\x1B[D') {
+                moveLeft();
+                printGrid();
+
+            } else if (input === 's' || input === '\x1B[B') {
+                moveDown();
+                printGrid();
+
+            } else if (input === 'd' || input === '\x1B[C') {
+                moveRight();
+                printGrid();
+
+            }
+            console.log(isGameOver())
+            if (isGameOver()) {
+                printGrid();
+                stream.write('Game over!\r\n');
+                return false;
+            } else {
+                printGrid();
+                return {
+                    gridSize: gridSize,
+                    grid: grid,
+                    score: score
+                }
+            }
         }
-    });
+    }
 
     addRandomTile();
     addRandomTile();
     printGrid();
+
+    if (isCommand) {
+        return {
+            gridSize: gridSize,
+            grid: grid,
+            score: score
+        }
+    }
 }
 
 
@@ -1398,7 +1481,7 @@ const server = new Server({
     var tries = 0;
 
     var lastUser = 0;
-    var hystoryPosition = 0;
+    var hystoryPosition = 1;
 
     let tabMachPosition = 0;
     let tabMachCommandPosition = 0;
@@ -2097,8 +2180,12 @@ Options:
 
                 let output = `stats: ${input.split(' ')[1]}: invalid argument\r\n`
                 if (parsed[0] == "--commands" || parsed[0] == "-c") {
+                    let lenght = 0;
+                    Object.keys(user.stats.commands).forEach(cmd => {
+                        if (cmd.length + 2 > lenght) { lenght = cmd.length + 2 }
+                    })
                     let commandStats = Object.keys(user.stats.commands).sort((a, b) => user.stats.commands[b] - user.stats.commands[a]).map(cmd => {
-                        return `${cmd}:${' '.repeat(15 - cmd.length)}${user.stats.commands[cmd]} times`;
+                        return `${cmd}${' '.repeat(lenght -cmd.length)}${user.stats.commands[cmd]} times`
                     }).join('\r\n');
 
                     output = `Command statistics for ${user.username}: \r\n`
@@ -2216,6 +2303,20 @@ Last login: ${userDB.stats.lastLogin.toLocaleString()}`;
                 mode = "tictactoe";
                 shell.write('\x1B[2K');
                 startTicTacToeGame(shell, true)
+
+                return false;
+            }
+        },
+        {
+            name: "2048",
+            description: "Play 2048 game",
+            root: false,
+            execute: function (input, currentUser, shell) {
+                mode = "2048";
+                shell.write('\x1B[2K');
+                let game = start2048Game(shell, true)
+
+                tempGame["2048"] = game;
 
                 return false;
             }
@@ -2421,6 +2522,17 @@ Last login: ${userDB.stats.lastLogin.toLocaleString()}`;
                             }
 
                             tempGame.ttt = result;
+                        } else if (mode === "2048") {
+                            let result = start2048Game(shell, true, { input: data.toString(), ...tempGame?.["2048"] })
+
+                            if (!result) {
+                                mode = "normal";
+                                shell.write(`${userDB.uid == 0 ? '\x1B[31m' : '\x1B[32m'}${userDB.username}@${instanceName}\x1B[0m:\x1B[34m${currentDir}\x1B[0m${userDB.uid == 0 ? '#' : '$'} `);
+                                tempGame["2048"] = null;
+                                return;
+                            }
+
+                            tempGame["2048"] = result;
                         } else {
 
                             var printableChars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!@#$%^&*()_+-=[]{}|;:,.<>?/\\\'"`~ \t\n\r';
