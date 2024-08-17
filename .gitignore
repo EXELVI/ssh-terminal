@@ -2,3 +2,4 @@
 node_modules/
 host.key
 messages.txt
+db.json

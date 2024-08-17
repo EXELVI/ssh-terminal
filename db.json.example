@@ -1,0 +1,226 @@
+{
+    "users": [
+        {
+            "username": "exelvi",
+            "password": "password",
+            "uid": 1000,
+            "home": "/home/exelvi",
+            "groups": [
+                "exelvi"
+            ],
+            "stats": {
+                "commands": {},
+                "files": 0,
+                "directories": 0,
+                "sudo": 0,
+                "uptime": 0,
+                "lastLogin": 0
+            }
+        },
+        {
+            "username": "root",
+            "password": "ifyoucanreadthisyouareahacker",
+            "uid": 0,
+            "groups": [
+                "root"
+            ],
+            "home": "/root",
+            "stats": {
+                "commands": {
+                    "ls": 4,
+                    "cd": 3,
+                    "exit": 12,
+                    "su": 2,
+                    "whoami": 3,
+                    "help": 1,
+                    "alias": 1,
+                    "stats": 2
+                },
+                "files": 1,
+                "directories": 0,
+                "sudo": 1,
+                "uptime": 10709,
+                "lastLogin": 0
+            }
+        }
+    ],
+ "fileSystem": {
+    "/": {
+      "type": "directory",
+      "owner": 0,
+      "lastModified": "2024-01-01T00:00:00.000Z",
+      "created": "2024-01-01T00:00:00.000Z",
+      "content": {
+        "home": {
+          "type": "directory",
+          "owner": 0,
+          "lastModified": "2024-01-01T00:00:00.000Z",
+          "created": "2024-01-01T00:00:00.000Z",
+          "content": {
+            "exelvi": {
+              "type": "directory",
+              "owner": 1000,
+              "lastModified": "2024-01-01T00:00:00.000Z",
+              "created": "2024-01-01T00:00:00.000Z",
+              "content": {
+                ".bash_history": {
+                  "type": "file",
+                  "owner": 1000,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": ""
+                },
+                ".bashrc": {
+                  "type": "file",
+                  "owner": 1000,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": ""
+                },
+                ".bash_aliases": {
+                  "type": "file",
+                  "owner": 1000,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": ""
+                },
+                "desktop": {
+                  "type": "directory",
+                  "owner": 1000,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": {
+                    "about.txt": {
+                      "type": "file",
+                      "owner": 1000,
+                      "lastModified": "2024-01-01T00:00:00.000Z",
+                      "created": "2024-01-01T00:00:00.000Z",
+                      "content": "Hello, I'm Exelvi! \nI'm a web developer and a student. \nI love coding and creating new things!"
+                    },
+                    "favotite.txt": {
+                      "type": "file",
+                      "owner": 1000,
+                      "lastModified": "2024-01-01T00:00:00.000Z",
+                      "created": "2024-01-01T00:00:00.000Z",
+                      "content": "My favorite programming language is JavaScript while my favorite color is blue. \nI love coding and creating new things. \nI'm also a big fan of Discord and VSCode. \nI hope you enjoy my website and my projects!"
+                    },
+                    "links.txt": {
+                      "type": "file",
+                      "owner": 1000,
+                      "lastModified": "2024-01-01T00:00:00.000Z",
+                      "created": "2024-01-01T00:00:00.000Z",
+                      "content": "Here are some links to my social media and projects: \n\nGitHub: https://github.com/EXELVI \nWebsite: https://exelvi.github.io/ \n\nThe rest of my social media can be found on my website. \n\n:D\n\n"
+                    }
+                  }
+                },
+                "documents": {
+                  "type": "directory",
+                  "owner": 1000,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": {
+                    "troll.txt": {
+                      "type": "file",
+                      "owner": 1000,
+                      "lastModified": "2024-01-01T00:00:00.000Z",
+                      "created": "2024-01-01T00:00:00.000Z",
+                      "content": "cat: troll.txt: Path not found"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "root": {
+          "type": "directory",
+          "owner": 0,
+          "lastModified": "2024-01-01T00:00:00.000Z",
+          "created": "2024-01-01T00:00:00.000Z",
+          "content": {
+            ".bash_history": {
+              "type": "file",
+              "owner": 0,
+              "lastModified": "2024-08-10T19:45:17.109Z",
+              "created": "2024-01-01T00:00:00.000Z",
+              "content": "ls\ncd ..\nhelp\nalias ll ls -la\nll\nstats \nstats exelv\nexit\nexit\nexit\nexit\nexti\nexit\nexit\n",
+              "size": 87
+            },
+            ".bashrc": {
+              "type": "file",
+              "owner": 0,
+              "lastModified": "2024-01-01T00:00:00.000Z",
+              "created": "2024-01-01T00:00:00.000Z",
+              "content": ""
+            },
+            ".bash_aliases": {
+              "content": "ll='ls -la'\n",
+              "owner": 0,
+              "lastModified": "2024-08-06T22:24:49.868Z",
+              "created": "2024-08-06T22:24:49.868Z",
+              "type": "file"
+            }
+          }
+        },
+        "etc": {
+          "type": "directory",
+          "owner": 0,
+          "lastModified": "2024-01-01T00:00:00.000Z",
+          "created": "2024-01-01T00:00:00.000Z",
+          "content": {
+            "motd": {
+              "type": "file",
+              "owner": 0,
+              "lastModified": "2024-01-01T00:00:00.000Z",
+              "created": "2024-01-01T00:00:00.000Z",
+              "content": "Welcome to the terminal! \r\n\r\nType 'help' to see all available commands"
+            },
+            "skel": {
+              "type": "directory",
+              "owner": 0,
+              "lastModified": "2024-01-01T00:00:00.000Z",
+              "created": "2024-01-01T00:00:00.000Z",
+              "content": {
+                ".bash_history": {
+                  "type": "file",
+                  "owner": 0,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": ""
+                },
+                ".bashrc": {
+                  "type": "file",
+                  "owner": 0,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": ""
+                },
+                ".bash_aliases": {
+                  "type": "file",
+                  "owner": 0,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": ""
+                },
+                "desktop": {
+                  "type": "directory",
+                  "owner": 0,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": {}
+                },
+                "documents": {
+                  "type": "directory",
+                  "owner": 0,
+                  "lastModified": "2024-01-01T00:00:00.000Z",
+                  "created": "2024-01-01T00:00:00.000Z",
+                  "content": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

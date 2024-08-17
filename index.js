@@ -199,7 +199,7 @@ if (hostKey) {
  * @param {string} options.input
  * @param {string} options.selector
  */
-function startRockPaperScissorsGame(stream, isCommand = false, options = {}) {
+function startRockPaperScissorsGame(stream, isCommand = false, options = {}) { 
     const choices = ['rock', 'paper', 'scissors'];
 
     let playerChoice = null;
@@ -2084,16 +2084,15 @@ const server = new Server({
             root: false,
             execute: function (input, currentUser, shell) {
                 let first = users.find(user => user.uid === currentUser).username + "@" + instanceName
-                let infos = [first, "-".repeat(first.length), "OS: ExelviOS", "Kernel: 5.4.0-80-generic", "Uptime: " + formatMilliseconds(new Date() - start), "Shell: bash", "Terminal: " + PTY.term]
+                let infos = [first, "-".repeat(first.length), "OS: ExelviOS", "Kernel: 5.4.0-80-generic", "Uptime: " + formatMilliseconds(new Date() - start), "Shell: bash", "Terminal: " + PTY.term, "Resolution: " + PTY.width + "x" + PTY.height, "Memory: " + ( process.memoryUsage().heapUsed / 1024 / 1024).toFixed(2) + "MB"];
                 let asciiArt = figlet.textSync('E', { font: 'Colossal' });
                 asciiArt = asciiArt.split("\n").map((line, index) => {
                     if (infos[index]) {
-
                         return line + " ".repeat(10) + (index == 1 || index == 0 ? "\x1B[32m" : "\x1B[34m") + infos[index] + "\x1B[0m\r\n";
                     } else {
                         return line + "\r\n";
                     }
-                }).join("\n");
+                }).join("");
                 return asciiArt;
 
             }
@@ -2524,7 +2523,7 @@ Last login: ${userDB.stats.lastLogin.toLocaleString()}`;
                 shell.write('\x1B[2K');
                 startRockPaperScissorsGame(shell, true)
 
-                return false;
+                return false; 
             }
         },
         {
@@ -2832,7 +2831,7 @@ Last login: ${userDB.stats.lastLogin.toLocaleString()}`;
                                     directionsQueue.push('w');
                                     break;
                                 case 'a':
-                                case '\x1B[D':
+                                case '\x1B[D':  
                                     directionsQueue.push('a');
                                     break;
                                 case 's':
@@ -3156,7 +3155,7 @@ Last login: ${userDB.stats.lastLogin.toLocaleString()}`;
 
                             if (out === false) return;
 
-                            var inputParts = input.split(' ');
+                            var inputParts = input.split(' ');  
                             if (inputParts[inputParts.length - 2] === '>') {
                                 if (inputParts[inputParts.length - 1] === "") {
                                     if (out != "" && out != undefined) shell.write(out);
@@ -3188,6 +3187,14 @@ Last login: ${userDB.stats.lastLogin.toLocaleString()}`;
                 console.log("PTY", info);
                 PTY = info;
                 accept();
+            });
+
+            session.on("window-change", (accept, reject, info) => {
+                //      console.log("Window change", info);
+                PTY.cols = info.cols;
+                PTY.rows = info.rows;
+                PTY.width = info.width;
+                PTY.height = info.height;
             });
 
 
