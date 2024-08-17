@@ -59,6 +59,7 @@ ssh <username>@localhost
 > Note: You can use `sudo` before a command to run it as the root user.
 
 > Note: You can use `> [filename]` at the end of a command to save the output to a file.
+
 | Command | Description | Usage | Notes |
 | ------- | ----------- | ----- | ---- |
 | `2048` | Play the 2048 game | `2048` | |
