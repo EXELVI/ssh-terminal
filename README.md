@@ -1,59 +1,67 @@
-# [terminal](https://github.com/EXELVI/ssh-terminal)
+# [🖥️ ssh-terminal](https://github.com/EXELVI/ssh-terminal) 
 
-This is a ssh terminal made in node.js with ssh2. 
 
 ![Terminal screen](assets/screen.png)
 
-## Features
+[![GitHub last commit](https://img.shields.io/github/last-commit/EXELVI/ssh-terminal?style=for-the-badge)](https://github.com/EXELVI/ssh-terminal/commits/main/)
+[![GitHub repo size](https://img.shields.io/github/repo-size/EXELVI/ssh-terminal?style=for-the-badge)](https://github.com/EXELVI/ssh-terminal)
+[![GitHub issues](https://img.shields.io/github/issues/EXELVI/ssh-terminal?style=for-the-badge)](https://github.com/EXELVI/ssh-terminal/issues)
+[![GitHub forks](https://img.shields.io/github/forks/EXELVI/ssh-terminal?style=for-the-badge)](https://github.com/EXELVI/ssh-terminal/network/members)
+[![GitHub stars](https://img.shields.io/github/stars/EXELVI/ssh-terminal?style=for-the-badge)](https://github.com/EXELVI/ssh-terminal/stargazers)
 
-- Command execution: Users can enter commands and see the output directly in the terminal.
-- File system navigation: Users can navigate through directories, list files, and perform basic file operations.
-- Command history: Users can access previously executed commands using the up and down arrow keys.
-- Autocomplete: Users can use the tab key to autocomplete commands and file paths.
-- User management: Users can create, delete, and modify user accounts.
-- Alias creation: Users can create aliases for commands.
-- Game integration: Users can play games like 2048, Connect 4, Snake, Rock Paper Scissors, and Tic Tac Toe.
+This is a **SSH terminal** made in Node.js using `ssh2`, featuring a wide array of commands, user management, and even integrated games for a fun experience. 🕹️
 
-## Installation
 
-To install the terminal, follow these steps:
+## ✨ Features
 
-1. Clone the repository:
+- **Command Execution**: Enter commands and see output directly in the terminal.
+- **File System Navigation**: Navigate directories, list files, and perform basic file operations.
+- **Command History**: Access previously executed commands using the arrow keys.
+- **Autocomplete**: Use the tab key to autocomplete commands and file paths.
+- **User Management**: Create, delete, and modify user accounts.
+- **Alias Creation**: Create custom aliases for commands.
+- **Game Integration**: Play games like 2048, Connect 4, Snake, Rock Paper Scissors, and Tic Tac Toe directly in the terminal.
 
-```bash 
-git clone https://github.com/EXELVI/ssh-terminal.git
-```
+## 🚀 Installation
+
+Follow these steps to install and run the terminal:
+
+1. **Clone the repository:**
+
+   ```bash 
+   git clone https://github.com/EXELVI/ssh-terminal.git
+   ```
 
 2. Install the dependencies:
 
-```bash
-npm install
-```
+   ```bash
+   npm install
+   ```
 
 3. Rename the `db.json.example` file to `db.json` (delete the existing `db.json` file if it exists):
 
-```bash
-mv db.json.example db.json
-```
+   ```bash
+   mv db.json.example db.json
+   ```
 
 4. Start the server:
 
-```bash
-npm start
-```
+   ```bash
+   npm start
+   ```
 
 5. Connect to the terminal using an SSH client:
 
-```bash
-ssh localhost
-```
-or 
-```bash
-ssh <username>@localhost
-```
+   ```bash
+   ssh localhost
+   ```
+   or 
+   ```bash
+   ssh <username>@localhost
+   ```
 
 
-## Commands
+## 🛠️ Commands
 
 
 > Note: You can use `sudo` before a command to run it as the root user.
@@ -98,7 +106,7 @@ ssh <username>@localhost
 > [] means required, () means optional
 
 
-## Special Users
+## 👤 Special Users
 
 The terminal has the following special users:
 
@@ -112,7 +120,10 @@ The terminal has the following special users:
 - `rick`: Just imagine what this user does. :D (Resize the terminal to see the magic, recommended 142x42 cols x rows)
 
 
-## Contributing
+## 🤝 Contributing
 
 Contributions are welcome! If you find any issues or have suggestions for improvements, please open an issue or submit a pull request on the GitHub repository.
 
+<p align="center">
+  Made with ❤️ by <a href="https://github.com/EXELVI">EXELVI</a>
+</p>
